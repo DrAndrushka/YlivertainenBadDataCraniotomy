@@ -34,9 +34,6 @@ COLUMN_RENAME_MAP = {
     'discharged_how': (
         'Izr_kustības nosaukums',
         ''),
-    'patient_surname': (
-        'Pacienta uzvārds',
-        ''),
     'patient_card_no': (
         'Karte',
         ''),
