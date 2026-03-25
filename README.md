@@ -190,7 +190,7 @@ Advanced / lower-level modules (not re-exported at package root): `ylivertainen.
 
 ## License
 
-Add a license file when you publish (e.g. MIT). Until then, all rights reserved unless you state otherwise.
+MIT License (see `LICENSE`).
 
 ## Author
 
