@@ -1,0 +1,56 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+dist/
+build/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Testing / typing / coverage
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Jupyter
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/
+
+# Pickled artifacts (model frames, report tables — regenerate locally)
+*.pickle
+*.pkl
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local logs / scratch
+*.log
+
+# Editors (optional: remove if you commit shared IDE settings)
+.idea/
+
+# Data safety: ignore by default (only the synthetic sample is published)
+ylivertainen/data/raw/**
+ylivertainen/data/processed/**
+ylivertainen/reports/tables/**
+ylivertainen/reports/figures/**
+
+# Keep one public synthetic sample
+!ylivertainen/data/raw/testtable_synthetic.csv
