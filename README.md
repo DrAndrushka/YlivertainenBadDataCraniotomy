@@ -1,5 +1,7 @@
 # Ylivertainen
 
+From trauma bay signal to reproducible ML: clinical data pipelines built for neuro-focused questions.
+
 Clinical tabular data toolkit: cleaning, cohort definition, descriptive data analysis (DDA), exploratory data analysis (EDA), feature decisions, and model-frame construction for binary classification tasks built on EMS–hospital stroke-family agreement labels.
 
 ## Clinical question
@@ -194,4 +196,9 @@ MIT License (see `LICENSE`).
 
 ## Author
 
-Andy — clinical data science / ML pipeline work.
+Andris Zaguzovs (Andy) — MD in Emergency Medicine, building portfolio-grade clinical data science and ML pipelines while training toward a Neurosurgery future.
+
+Interests: brain trauma first, then broader brain and nervous system analytics, neuroscience, neurosurgery-oriented clinical research, cerebrovascular pathways, and reproducible EHR ML tooling.
+
+GitHub: https://github.com/DrAndrushka
+LinkedIn: https://www.linkedin.com/in/andris-zaguzovs-341308373/
