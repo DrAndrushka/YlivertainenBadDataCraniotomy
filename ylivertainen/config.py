@@ -18,35 +18,32 @@ class TaskConfig:
 #                  Define The Task
 #=================================================
 TIA_MATCH = TaskConfig(
-    name="tia_match_binary",
+    name="Matching TIA",
     target_column="TIA_match",
     positive_class=True,
     task_type="binary",
     inclusion_criteria={
-        'nmpd_diag': 'non-NaN',
-        'izrakstisanas_diag': 'non-NaN'
+        'TIA_match': 'non-NaN',
     },
 )
 
 ISCHEMIC_STROKE_MATCH = TaskConfig(
-    name="ischemic_stroke_match_binary",
+    name="Matching Ischemic Stroke",
     target_column="ischemic_match",
     positive_class=True,
     task_type="binary",
     inclusion_criteria={
-        'nmpd_diag': 'non-NaN',
-        'izrakstisanas_diag': 'non-NaN'
+        'ischemic_match': 'non-NaN',
     },
 )
 
 ANY_CEREBROVASCULAR_MATCH = TaskConfig(
-    name="any_cerebrovascular_match_binary",
+    name="Matching Any Cerebrovascular",
     target_column="any_cerebrovascular_match",
     positive_class=True,
     task_type="binary",
     inclusion_criteria={
-        'nmpd_diag': 'non-NaN',
-        'izrakstisanas_diag': 'non-NaN'
+        'any_cerebrovascular_match': 'non-NaN',
     },
 )
 

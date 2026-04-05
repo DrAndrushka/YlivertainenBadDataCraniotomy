@@ -15,21 +15,38 @@ from ylivertainen.aesthetics_helpers import GREEN, YELLOW, ORANGE, RED, BOLD, BL
 #==================================================
 #            Pre merge column name check
 #==================================================
-def pre_merge_check(csvs: list[str]) -> None:
+def pre_merge_check(
+    root: Path,
+    colname_length: int = 15,
+    show_dfs: bool = False,
+    ) -> None:
+    
+    raw_dir = root / "data" / "raw"
+    csvs = sorted(raw_dir.glob("*.csv"))    # <== takes all CSVs from ylivertainen/data/raw
+    
     base_cols = None
 
     for i, csv in enumerate(csvs):
-        csv_name = str(csv).split(sep='/')[-1]
-        print(f"{BOLD}{BLUE}======== {csv_name} ========{RESET}")
+        if "\\" in str(csv):
+            csv_name = str(csv).split(sep='\\')[-1]
+        else:
+            csv_name = str(csv).split(sep='/')[-1]
         df = pd.read_csv(csv, nrows=2)
         cols = list(df.columns.str.strip())
-        print("Columns:", cols)
+        df.columns = df.columns.astype(str).str.strip().str[:colname_length]
 
         if i == 0:
+            print(f"{BOLD}{BLUE}=" * 70)
+            print(csv_name)
+            print("=" * 70, RESET)
             # Save the first file's columns as the reference
+            print(f"{'\n'.join([f"`{col}`" for col in cols])}")
             base_cols = cols
-            print("✅ Using this file as column name reference")
+            print(f"{BOLD}===== ✅ Using this file as column name reference ✅ ====={RESET}")
         else:
+            print('\n' + f"{BOLD}{BLUE}=" * 70)
+            print(csv_name)
+            print("=" * 70, RESET)
             base_set = set(base_cols)
             curr_set = set(cols)
 
@@ -40,14 +57,17 @@ def pre_merge_check(csvs: list[str]) -> None:
                 print(" ❌ Schema difference vs FIRST file:")
                 if missing:
                     print(f'{ORANGE}{BOLD}=== Missing (in first, not here) ==={RESET}')
-                    print(f'- {"\n- ".join(missing)}')
+                    print(f"'{f"'\n'".join(missing)}'")
                 if extra:
                     print(f'{ORANGE}{BOLD}=== Extra (here, not in first) ==={RESET}')
-                    print(f'- {"\n- ".join(extra)}')
+                    print(f"'{f"'\n'".join(extra)}'")
             else:
                 print(" ✅ Same set of column names as FIRST file")
 
-        display(df.head(2))
+        if show_dfs:
+            display(df.head(2))
+
+    return csvs
 
 #====================================================================
 #====================================================================
@@ -130,9 +150,8 @@ class YlivertainenDataCleaningSurg:
             for csv_key in sorted(dropped_cols.keys(), key=lambda p: Path(str(p)).name):
                 csv_name = Path(str(csv_key)).name
                 dropped = sorted(dropped_cols[csv_key])
-                removed_section_lines.append(f"**{csv_name}** ({len(dropped)})")
-                for col_name in dropped:
-                    removed_section_lines.append(f"- {col_name}")
+                removed_section_lines.append(f"**{csv_name}** ({len(dropped)})\n")
+                removed_section_lines.append(", ".join(f"`{c}`" for c in dropped))
                 removed_section_lines.append("")
         else:
             removed_section_lines.append("_none_")
@@ -147,18 +166,21 @@ class YlivertainenDataCleaningSurg:
         renamed_section_lines: list[str] = ["---", "## 🔁 RENAMED COLUMNS", ""]
         if canonical_view:
             for canonical in sorted(canonical_view.keys()):
-                renamed_section_lines.append(str(canonical))
+                renamed_section_lines.append(
+                    f"<span style='color:#4da3ff; font-weight:700;'>===== {canonical} =====</span>"
+                    )
                 entries = sorted(
                     canonical_view[canonical],
                     key=lambda t: (Path(str(t[0])).name, str(t[1])),
                 )
                 for csv_key, old_name in entries:
                     table_name = Path(str(csv_key)).name
-                    renamed_section_lines.append(f"- {old_name} ({table_name})")
+                    renamed_section_lines.append(f"\n{old_name} 🪄 {table_name}")
                 renamed_section_lines.append("")
         else:
             renamed_section_lines.append("_none_")
         display(Markdown("\n".join(renamed_section_lines)))
+        display(Markdown("---" * 70))
 
         return super_df
     
@@ -179,7 +201,7 @@ class YlivertainenDataCleaningSurg:
     #==============================================================
     #                   SCHEMA FUNCTION DEFINITION 
     #==============================================================
-    def apply_schema(self) -> pd.DataFrame:
+    def apply_schema(self) -> "YlivertainenDataCleaningSurg":
         
         self.df.columns = [col.strip() for col in self.df.columns]
 
@@ -303,7 +325,7 @@ class YlivertainenDataCleaningSurg:
     #==============================================================
     #                  DERIVED FUNCTION DEFINITION 
     #==============================================================
-    def apply_derived(self):
+    def apply_derived(self) -> "YlivertainenDataCleaningSurg":
         print("═" * 70)
         print(f"{BOLD}🍼 CREATION OF DERIVED {RESET}")
         print("─" * 70)
@@ -501,7 +523,7 @@ class YlivertainenDataCleaningSurg:
     #==============================================================
     #               CLEAN UP AFTER SCHEMA & DERIVED 
     #==============================================================
-    def cleanup(self):
+    def cleanup(self) -> "YlivertainenDataCleaningSurg":
         print("═" * 70)
         print(f"{BOLD}🧹 CLEAN UP {RESET}")
         print("─" * 70)
@@ -520,28 +542,28 @@ class YlivertainenDataCleaningSurg:
     #==============================================================
     #                  Creating NaN feature flags 
     #==============================================================
-    def null_as_feature(self) -> "YlivertainenDataCleaningSurg":
+    def apply_nan_features(self) -> "YlivertainenDataCleaningSurg":
         print("═" * 70)
         print(f"{BOLD} ⭕ NaN features Flags {RESET}")
         print("─" * 70)
 
-        df = self.df
+        df = self.df.copy()
         
         exclude_derived = [ColSpec.name for ColSpec in DERIVED]
         cols = [col for col in df if col not in exclude_derived]
         
         for col in cols:
-            null_sum = self.df[col].isna().sum()
+            null_sum = df[col].isna().sum()
             
             if null_sum > 0:
-                self.df[f'{col}_missing'] = self.df[col].isna()
+                df[f'{col}_missing'] = df[col].isna()
                 print(f'{BLUE}{BOLD}{col}{RESET} has {RED}{BOLD}{null_sum} NaNs{RESET}. Created feature flag column')
 
             else:
                 print(f'{GRAY}✅ No NaNs found in{RESET} {col}')
 
         # ===== feedback =====
-        total_nans = self.df.isna().sum().sum()
+        total_nans = df.isna().sum().sum()
         if total_nans > 0:
             print(f"{GREEN}{BOLD}✔ NaN feature cols:{RESET} created NaN feature columns")
         else:
@@ -638,6 +660,29 @@ class YlivertainenDataCleaningSurg:
         else:
             return self
 
+    
+    #==============================================================
+    #                   Save cleaned df to csv
+    #==============================================================
+    def ylivertainen_janitor(
+        self,
+        apply_all: bool = False,
+        id_cols: list[str] = None,
+        include_first: bool = True,
+        drop_dupes: bool = False,
+        ):
+        if apply_all:
+            self.apply_schema()
+            self.apply_derived()
+            self.apply_nan_features()
+            self.resolve_dupes(id_cols, include_first, drop_dupes)
+            self.cleaning_overview_and_commit()
+        else:
+            self.resolve_dupes(id_cols, include_first, drop_dupes)
+            self.cleaning_overview_and_commit()
+        
+        return self.df
+    
     #==============================================================
     #                   Overview of all columns 
     #==============================================================
@@ -696,10 +741,19 @@ class YlivertainenDataCleaningSurg:
                 else:
                     print(f'{BOLD}NaN count:{RESET} {GREEN}{nan_count}{RESET}')
 
+        for col in self.df.columns:
+            if col not in analyse_those:
+                print(f'{BLUE}{BOLD}===== {col} ====={RESET}')
+                print(f'{BOLD}Dtype:{RESET} {self.df[col].dtype}')
+                print(f'{BOLD}NaN count:{RESET} {self.df[col].isna().sum()}')
+                print(f'{BOLD}Unique count:{RESET} {self.df[col].nunique()}')
+                print(f'{BOLD}Commonest:{RESET} {self.df[col].value_counts().head(5).to_dict()}')
+                print(f'{BOLD}Rarest:{RESET} {self.df[col].value_counts().tail(5).to_dict()}')
+
     #==============================================================
-    #                      SAVE CLEANED DF 
+    #                      COMMIT CLEANED DF 
     #==============================================================
-    def save_cleaned_df(self):
+    def cleaning_overview_and_commit(self):
         print("═" * 70)
         print(f"{BOLD}🧠 DATA CLEANING COMPLETE — FRAME STABLE{RESET}")
         print("─" * 70)
@@ -714,7 +768,7 @@ class YlivertainenDataCleaningSurg:
         print(f"   Shape         : {n_rows} rows x {n_cols} cols")
         print(f"   Remaining NaNs: {total_nans} cells ({nan_pct:0.2f}%)")
         print("   Status        : noise resected, dtypes aligned, ready for cohort craniotomy 🧠🪓")
-        print(f"\n{BOLD}{GREEN}→ Next: pass this straight into cohort/DDA/EDA — no extra rituals needed.{RESET}")
+        print(f"\n{BOLD}{GREEN}→ Next: pass this straight into cohort — no extra rituals needed.{RESET}")
 
         display(cleaned_df.head())
         return cleaned_df

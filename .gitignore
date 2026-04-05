@@ -30,6 +30,7 @@ htmlcov/
 # Pickled artifacts (model frames, report tables — regenerate locally)
 *.pickle
 *.pkl
+*.joblib
 
 # Environment / secrets
 .env
@@ -45,12 +46,14 @@ Thumbs.db
 
 # Editors (optional: remove if you commit shared IDE settings)
 .idea/
+.vscode/
+.cursor/
 
-# Data safety: ignore by default (only the synthetic sample is published)
+# Data safety: ignore by default (only synthetic samples are published)
 ylivertainen/data/raw/**
 ylivertainen/data/processed/**
-ylivertainen/reports/tables/**
-ylivertainen/reports/figures/**
+ylivertainen/reports/**
+ylivertainen/example_table/**
 
-# Keep one public synthetic sample
-!ylivertainen/data/raw/testtable_synthetic.csv
+# Keep public synthetic samples
+!ylivertainen/example_table/testtable_synthetic.csv

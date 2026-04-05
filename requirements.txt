@@ -16,6 +16,8 @@ seaborn>=0.13.0
 
 # Notebooks (IPython.display, Markdown in modules)
 ipython>=8.12.0
+jinja2>=3.1.0
+joblib>=1.3.0
 
 # Optional: run Jupyter notebooks locally (uncomment if needed)
 # jupyterlab>=4.0.0

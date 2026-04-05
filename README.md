@@ -1,204 +1,178 @@
-# Ylivertainen
+# Ylivertainen 0.2.0 🧠⚡
 
-From trauma bay signal to reproducible ML: clinical data pipelines built for neuro-focused questions.
+From trauma-bay chaos to reproducible ML.  
+`Ylivertainen` is a clinical tabular toolkit for stroke-family agreement tasks, built for clean pipelines, auditable decisions, and portfolio-grade outputs.
 
-Clinical tabular data toolkit: cleaning, cohort definition, descriptive data analysis (DDA), exploratory data analysis (EDA), feature decisions, and model-frame construction for binary classification tasks built on EMS–hospital stroke-family agreement labels.
+> **Scope:** research, education, and ML workflow engineering.  
+> **Not clinical decision support.**
 
-## Clinical question
+---
 
-Given prehospital (EMS) and hospital diagnosis fields, can we define cohorts and targets that reflect **agreement** between EMS impression and discharge diagnosis (e.g. TIA, ischemic stroke, broader cerebrovascular match)? The pipeline turns raw CSVs into a reproducible `(X, y)` model frame for supervised learning—not clinical decision support.
+## Why this exists 🏥
 
-## Golden path (single documented flow)
+Clinical tabular projects usually fail in three places: messy schema, unclear cohort logic, and undocumented feature decisions.  
+This repo solves those in one flow:
 
-Run the canonical notebook top to bottom after a clean kernel:
+- 🧹 cleaning + harmonization
+- 🚧 cohort definition by task
+- 📊 DDA + EDA
+- 🧪 inferential testing
+- 🔮 predictive modeling
+- 🧾 HTML reporting
 
-1. **Setup** — resolve project paths; ensure the directory **containing** the `ylivertainen` package is on `PYTHONPATH` (see [Running](#running)).
-2. **Cleaning** — merge raw CSVs, schema, derived columns, optional duplicate handling.
-3. **Cohort** — inclusion rules, unified `target`, `metadata`.
-4. **DDA** — numerical / categorical / binary summaries; optional table exports under `ylivertainen/reports/tables/`.
-5. **EDA** — whitelist predictors, associations, feature-decision table; optional exports.
-6. **Model frame** — `build_model_frame` → **`(X, y)`** and optional pickle under `ylivertainen/data/processed/`.
+Core clinical question:
 
-Canonical notebook:
+> Can prehospital diagnosis signal and discharge diagnosis be converted into reproducible agreement labels (TIA / ischemic / broader cerebrovascular), then into a clean `(X, y)` model frame?
 
-- `ylivertainen/notebooks/YLIVERTAINEN_CraniotomyForBadData.ipynb`
+---
 
-## Stroke-family task registry
+## What you get 🔧
 
-**Single source of truth:** all modeling tasks are defined in `ylivertainen/config.py` as frozen `@dataclass` instances of `TaskConfig`. The notebook and pipeline take a single `task` object; cohort, metadata, and export filenames use `task.name` and `task.target_column` consistently.
+- **Single task registry** in `ylivertainen/config.py` using frozen `TaskConfig`
+- **Unified pipeline stages** from raw tabular fields to model-ready data
+- **Feature-decision layer** that tracks missingness, leakage, redundancy, and keep/drop rationale
+- **Notebook-first golden path** plus importable Python modules
+- **Release-ready package metadata** (`pyproject.toml`, top-level API exports)
 
-### `TaskConfig` fields
+---
 
-| Field | Role |
-|-------|------|
-| `name` | Stable string ID for artifacts (e.g. pickles, report names): `tia_match_binary`, … |
-| `target_column` | Column in the cleaned dataframe that holds the label; must match derived columns from `schema.py` / cleaning. |
-| `positive_class` | Scikit-learn / metrics: which value counts as the positive class (here `True` for agreement flags). |
-| `task_type` | `"binary"` (current stroke-family tasks). |
-| `inclusion_criteria` | Cohort rules before modeling (e.g. require non-missing EMS and discharge diagnosis codes). |
-
-**Example — shape of a task (same structure as the built-ins):**
-
-```python
-from ylivertainen.config import TaskConfig
-
-# Illustrative: fields mirror what lives in config.py for TIA_MATCH / others.
-example = TaskConfig(
-    name="tia_match_binary",
-    target_column="TIA_match",
-    positive_class=True,
-    task_type="binary",
-    inclusion_criteria={
-        "nmpd_diag": "non-NaN",
-        "izrakstisanas_diag": "non-NaN",
-    },
-)
-```
-
-### Naming story (three predefined tasks)
-
-Each **module-level constant** is the public handle; **`name`** is the filesystem-safe slug; **`target_column`** is the clinical/derived label column.
-
-| Constant | `task.name` (artifacts) | `target_column` (label in data) | Clinical idea |
-|----------|-------------------------|----------------------------------|---------------|
-| `TIA_MATCH` | `tia_match_binary` | `TIA_match` | EMS vs discharge agreement on TIA pattern (G45.*). |
-| `ISCHEMIC_STROKE_MATCH` | `ischemic_stroke_match_binary` | `ischemic_match` | Agreement on ischemic stroke / related codes (I63, I64). |
-| `ANY_CEREBROVASCULAR_MATCH` | `any_cerebrovascular_match_binary` | `any_cerebrovascular_match` | Broader cerebrovascular agreement (I6*, G45.*). |
-
-**Default for demos and README examples:** use **`TIA_MATCH`** unless you are comparing tasks explicitly.
-
-```python
-from ylivertainen.config import TIA_MATCH, ISCHEMIC_STROKE_MATCH, ANY_CEREBROVASCULAR_MATCH
-
-# Default demo / single-task run:
-task = TIA_MATCH
-
-# Switch task for comparison runs (one at a time):
-# task = ISCHEMIC_STROKE_MATCH
-# task = ANY_CEREBROVASCULAR_MATCH
-```
-
-## Repository layout
+## Repository layout 🗂️
 
 ```text
-TheLibraryOfCode/
+YlivertainenBadDataCraniotomy/
 ├── .gitignore
+├── LICENSE
 ├── README.md
 ├── requirements.txt
+├── pyproject.toml
 └── ylivertainen/
     ├── __init__.py
-    ├── config.py
+    ├── aesthetics_helpers.py
     ├── cleaning.py
     ├── cohort.py
+    ├── columns_to_canonical.py
+    ├── config.py
     ├── dda.py
     ├── eda.py
-    ├── predictive.py
+    ├── predictive_modeling.py
+    ├── INFERENTIAL.py
+    ├── PREDICTIVE.py
+    ├── THE_REPORT.py
     ├── schema.py
-    ├── columns_to_canonical.py
-    ├── aesthetics_helpers.py
     ├── notebooks/
-    ├── data/
-    │   ├── raw/
-    │   └── processed/
+    │   └── YLIVERTAINEN_CraniotomyForBadData.ipynb
+    ├── tests/
+    │   └── test_cleaning_dupes.py
     ├── reports/
-    │   ├── tables/
-    │   └── figures/
-    └── tests/
+    └── example_table/
+        └── testtable_synthetic.csv
 ```
 
-## Requirements
+---
 
-- **Python** 3.11+ recommended.
-- Locked dependency set: **`requirements.txt`** at the repo root (`pip install -r requirements.txt`).
-- Core packages: `pandas`, `numpy`, `scipy`, `scikit-learn`, `matplotlib`, `seaborn`, `ipython`, `pytest` (smoke tests). Uncomment `jupyterlab` in that file if you want the full notebook UI via pip.
-- Packaging metadata is available in **`pyproject.toml`** (editable install supported).
+## Built-in tasks 🎯
 
-## Running
+Defined in `ylivertainen/config.py`:
 
-1. Create and activate a virtual environment (e.g. `python -m venv .venv` then `source .venv/bin/activate` on macOS/Linux).
+- `TIA_MATCH`
+- `ISCHEMIC_STROKE_MATCH`
+- `ANY_CEREBROVASCULAR_MATCH`
 
-2. Install dependencies:
+Each `TaskConfig` carries:
 
-   ```bash
-   pip install -r requirements.txt
-   ```
+- `name`
+- `target_column`
+- `positive_class`
+- `task_type`
+- `inclusion_criteria`
 
-3. **Imports:** use `from ylivertainen...`. The notebook setup cell adds the **parent** of the `ylivertainen` folder to `sys.path` (the folder that *contains* `ylivertainen/`). Alternatively set `PYTHONPATH` to that folder, or install the package in editable mode:
+---
 
-   ```bash
-   pip install -e .
-   ```
+## Public API 🧪
 
-4. Open `ylivertainen/notebooks/YLIVERTAINEN_CraniotomyForBadData.ipynb` and run all cells from the top.
+Top-level imports are exposed via `ylivertainen/__init__.py`:
 
-## Pipeline design notes
+- **Config/tasks:** `TaskConfig`, `TIA_MATCH`, `ISCHEMIC_STROKE_MATCH`, `ANY_CEREBROVASCULAR_MATCH`
+- **Cleaning:** `YlivertainenDataCleaningSurg`, `pre_merge_check`
+- **Cohort:** `apply_inclusion_criteria`, `build_stroke_agreement_cohort`
+- **DDA/EDA:** `YlivertainenDDA`, `YlivertainenEDA`
+- **Model frame:** `build_model_frame`
+- **Inferential:** `YlivertainenInferential`
+- **Predictive:** `YlivertainenPredictive`
+- **Reporting:** `YlivertainenTheReport`
 
-### Missingness policy (no separate `classify_missingness` export)
+Quick sanity check:
 
-There is **no** standalone `classify_missingness()` in the package. Imputation / flagging **policy** for the feature-decisions table is implemented inside **`YlivertainenEDA.build_feature_decisions_table()`** in `eda.py` (helper `_missing_action`, plus row `notes`), driven by the **`missingness_dict`** you pass from the notebook (keys like `"{col}_missing"` → labels such as `MNAR`, `STRUCTURAL pattern`, etc.). To change rules, edit that method (or build the dict upstream and keep the table logic as the single consumer).
+```python
+import ylivertainen as y
+print(y.__version__)  # 0.2.0
+```
 
-### Datetime columns (no `analyse_datetime` in DDA)
+---
 
-**DDA** does not include a separate `analyse_datetime()` pass. Raw timestamps are mostly **dropped or engineered** in `schema.py` / cleaning (e.g. hour, day-of-week). In **EDA**, columns whitelisted as `predictor_datetime` are listed for review; **target–predictor association** logic skips `datetime` and `text` predictors as unsupported in the current implementation. If you need datetime-specific summaries, add a notebook section or extend `dda.py` later.
+## Quick start 🚀
 
-### `null_as_feature` and order vs feature decisions
+Python 3.11+ required.
 
-Run **`YlivertainenDataCleaningSurg.null_as_feature()`** (and the rest of cleaning) **before** EDA builds **`build_feature_decisions_table`**, so `*_missing` indicator columns exist on the frame you pass into **`YlivertainenEDA`**. Recommended order: **cleaned dataframe (with null flags) → cohort → DDA → EDA (whitelist, associations, feature decisions) → `build_model_frame` → `(X, y)`**.
-
-### Optional: run summary next to artifacts
-
-You can manually export a short **Markdown** summary (run ID, task name, row counts, paths to pickles) under `ylivertainen/reports/` next to tables/figures. Nothing in the library writes this automatically yet.
-
-## Smoke tests & import check
-
-From the **repository root** (`TheLibraryOfCode/`, the directory that **contains** `ylivertainen/`):
+### Windows (PowerShell)
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
+.venv\Scripts\activate
 pip install -r requirements.txt
-export PYTHONPATH=.         # Windows PowerShell: $env:PYTHONPATH="."
-python -c "import ylivertainen as y; print('ok', y.__version__)"
-python -m unittest discover -s ylivertainen/tests -p "test_*.py"
-# or (recommended for interpreter consistency):
-python -m pytest ylivertainen/tests/
+pip install -e .
 ```
 
-For a **full** pipeline smoke test, use the canonical notebook on toy or de-identified data (cohort step needs columns that match `TaskConfig` and schema). The public synthetic sample filename is `ylivertainen/data/raw/testtable_synthetic.csv`.
-
-## Git (first-time repo)
+### macOS / Linux
 
 ```bash
-cd /path/to/TheLibraryOfCode
-git init
-git add README.md requirements.txt pyproject.toml .gitignore ylivertainen/
-git status
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+pip install -e .
 ```
 
-Do **not** commit `.env` or secrets. This repo’s `.gitignore` keeps `ylivertainen/data/raw/**`, `ylivertainen/data/processed/**`, and `ylivertainen/reports/**` ignored by default, while explicitly allowing the single public synthetic sample `ylivertainen/data/raw/testtable_synthetic.csv`.
+---
 
-## Public API (`__init__.py`)
+## Golden notebook flow 📓
 
-Convenience imports are re-exported from **`ylivertainen`** (see `ylivertainen/__init__.py` and `__all__`). **`__version__`** follows semantic-ish `0.x.y` bumps when you change behavior or cut a release.
+Run:
 
-Advanced / lower-level modules (not re-exported at package root): `ylivertainen.schema` (`ColSpec`, `SCHEMA`, `DERIVED`), `ylivertainen.columns_to_canonical` (`COLUMN_RENAME_MAP`).
+- `ylivertainen/notebooks/YLIVERTAINEN_CraniotomyForBadData.ipynb`
 
-## Data and privacy
+Recommended sequence:
 
-- **`.gitignore`** ignores virtualenvs, `__pycache__`, Jupyter checkpoints, and `*.pickle` / `*.pkl` by default, and it keeps `ylivertainen/data/raw/**`, `ylivertainen/data/processed/**`, and `ylivertainen/reports/**` ignored by default (except `ylivertainen/data/raw/testtable_synthetic.csv`).
-- Do **not** commit patient-identifying or sensitive clinical data. Use de-identified or synthetic data for demos.
-- Paths in documentation are examples; replace with your local layout.
-- This project is for **research, education, and portfolio** use. It is **not** validated for clinical decision-making or deployment in care settings.
+1. Setup and path resolution
+2. Cleaning and derivations
+3. Cohort creation from selected `TaskConfig`
+4. DDA summaries
+5. EDA + feature decisions
+6. `(X, y)` creation via `build_model_frame`
+7. Optional inferential / predictive / report generation
 
-## License
+---
 
-MIT License (see `LICENSE`).
+## Testing ✅
 
-## Author
+From repo root:
 
-Andris Zaguzovs (Andy) — MD in Emergency Medicine, building portfolio-grade clinical data science and ML pipelines while training toward a Neurosurgery future.
+```bash
+python -m pytest ylivertainen/tests/
+# fallback
+python -m unittest discover -s ylivertainen/tests -p "test_*.py"
+```
 
-Interests: brain trauma first, then broader brain and nervous system analytics, neuroscience, neurosurgery-oriented clinical research, cerebrovascular pathways, and reproducible EHR ML tooling.
+---
 
-GitHub: https://github.com/DrAndrushka
-LinkedIn: https://www.linkedin.com/in/andris-zaguzovs-341308373/
+## Data + privacy 🔒
+
+- Real/sensitive data and generated artifacts are ignored by default in `.gitignore`
+- Public synthetic sample is intentionally whitelisted:
+  - `ylivertainen/example_table/testtable_synthetic.csv`
+- Do not commit patient-identifying information
+
+---
+
+## License 📜
+
+MIT License. See `LICENSE`.

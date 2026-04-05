@@ -22,9 +22,6 @@ class YlivertainenDDA:
         self.task_name = metadata['task_name']
         self.target = metadata['target_col']
 
-        target_to_first = ['row_id', 'target'] + [col for col in self.DDA.columns if col not in ['row_id', 'target']]
-        self.DDA = self.DDA[target_to_first]
-
         self.cols_to_not_analyse = []
 
         # ========== DDA Tables ==========
@@ -110,26 +107,26 @@ class YlivertainenDDA:
             col_to_analyse = self.DDA[col]
             len_df = len(col_to_analyse)
             missing_n = col_to_analyse.isna().sum()
-            col_name = col
             #============ THE DATA ============
             col_name = col
+            x = col_to_analyse.dropna().to_numpy(dtype="float64")
             n = col_to_analyse.dropna().count()
             n_unique = col_to_analyse.nunique()
             missing_pct = missing_n / len_df
-            maxx = col_to_analyse.max()
-            minn = col_to_analyse.min()
+            maxx = x.max()
+            minn = x.min()
             median = col_to_analyse.median()
             mean = col_to_analyse.mean()
             mode = [str(m) for m in col_to_analyse.mode()]
-            std = col_to_analyse.std()
+            std = x.std()
             cv = std / mean
-            trimmed_mean = trim_mean(col_to_analyse, proportiontocut=0.1)
+            trimmed_mean = trim_mean(x, proportiontocut=0.1)
                 #Conservative: 5% (0.05). Use this if your data is mostly clean but has a few glitches
                 #Standard: 10% (0.1). The sweet spot
                 #Aggressive: 25% (0.25). This leaves you with only the middle 50% (the Interquartile Range). Only do that if the data is absolute trash
-            iqrange = iqr(col_to_analyse.to_numpy())
-            p_5th  = np.percentile(col_to_analyse.to_numpy(), 5)
-            p_95th  = np.percentile(col_to_analyse.to_numpy(), 95)
+            iqrange = iqr(x)
+            p_5th  = np.percentile(x, 5)
+            p_95th  = np.percentile(x, 95)
             skewness = col_to_analyse.skew()
                 # Positive - Right-Skewed
                 # Negative - Left-Skewed
@@ -309,7 +306,7 @@ class YlivertainenDDA:
             
             #============ THE DATA ============
             col_name = col
-            n = col_to_analyse.count()
+            n = col_to_analyse.dropna().count()
             n_unique = col_to_analyse.nunique()
             missing_pct = missing_n / len_df * 100
             first_mode = vc.index[0]      # most common category
@@ -463,7 +460,7 @@ class YlivertainenDDA:
             cat1 = vc.index[0]                          # most common category
             cat0 = vc.index[1]
             col_name = col
-            n = col_to_analyse.count()
+            n = col_to_analyse.dropna().count()
             if '_missing' in col_name:
                 missing_pct = pd.NA
             else:
@@ -565,9 +562,9 @@ class YlivertainenDDA:
 
     #================= Export Tables ====================
     def export_all_overviews(self, export):
-        numerical_path = self.root / 'reports' / 'tables' / f'(numerical_DDA_overview){self.task_name}.pickle'
-        categorical_path = self.root / 'reports' / 'tables' / f'(categorical_DDA_overview){self.task_name}.pickle'
-        binary_path = self.root / 'reports' / 'tables' / f'(binary_DDA_overview){self.task_name}.pickle'
+        numerical_path = self.root / 'reports' / 'tables' / f'(DDA_numerical_overview){self.task_name}.pickle'
+        categorical_path = self.root / 'reports' / 'tables' / f'(DDA_categorical_overview){self.task_name}.pickle'
+        binary_path = self.root / 'reports' / 'tables' / f'(DDA_binary_overview){self.task_name}.pickle'
         if export:
             self.numerical_DDA.to_pickle(numerical_path)
             self.categorical_DDA.to_pickle(categorical_path)
@@ -575,18 +572,17 @@ class YlivertainenDDA:
             print(f'✅ Successful EXPORT of all DDA overviews\n')
             print(f'✅ Folder: {BLUE}{BOLD}ylivertainen/reports/tables/{RESET}')
             print(f'✅ FORMAT: {BLUE}{BOLD}pickle{RESET}\n')
-            print(f'✅ Numerical DDA Overview: {BLUE}{BOLD}(numerical_DDA_overview){self.task_name}{RESET}')
-            print(f'✅ Categorical DDA Overview: {BLUE}{BOLD}(categorical_DDA_overview){self.task_name}{RESET}')
-            print(f'✅ Binary DDA Overview: {BLUE}{BOLD}(binary_DDA_overview){self.task_name}{RESET}')
+            print(f'✅ Numerical DDA Overview: {BLUE}{BOLD}(DDA_numerical_overview){self.task_name}{RESET}')
+            print(f'✅ Categorical DDA Overview: {BLUE}{BOLD}(DDA_categorical_overview){self.task_name}{RESET}')
+            print(f'✅ Binary DDA Overview: {BLUE}{BOLD}(DDA_binary_overview){self.task_name}{RESET}')
         else:
             print(f'🔄 Gonna save in: {BLUE}{BOLD}ylivertainen/reports/tables/{RESET}')
             print(f'🔄 FORMAT: {BLUE}{BOLD}pickle{RESET}\n')
-            print(f'🔄 Numerical DDA Overview: {BLUE}{BOLD}(numerical_DDA_overview){self.task_name}{RESET}')
-            print(f'🔄 Categorical DDA Overview: {BLUE}{BOLD}(categorical_DDA_overview){self.task_name}{RESET}')
-            print(f'🔄 Binary DDA Overview: {BLUE}{BOLD}(binary_DDA_overview){self.task_name}{RESET}')
+            print(f'🔄 Numerical DDA Overview: {BLUE}{BOLD}(DDA_numerical_overview){self.task_name}{RESET}')
+            print(f'🔄 Categorical DDA Overview: {BLUE}{BOLD}(DDA_categorical_overview){self.task_name}{RESET}')
+            print(f'🔄 Binary DDA Overview: {BLUE}{BOLD}(DDA_binary_overview){self.task_name}{RESET}')
             print(f'===== {BOLD}export={BLUE}True{RESET} to save =====\n')
 
-    def prepare_for_EDA(self):
         print("═" * 70)
         print(f"{BOLD}🧠 DDA STAGE COMPLETE — BRAIN MAP LOCKED IN{RESET}")
         print("─" * 70)
@@ -600,8 +596,7 @@ class YlivertainenDDA:
         print(f"   Remaining NaNs: {total_nans} cells ({nan_pct:0.2f}%)")
         print("   Contents      : variable summaries, distributions, missingness map — all scrubbed and labeled.")
 
-        print(f"\n{BOLD}{GREEN}→ Next hop:{RESET} feed `post_DDA_df` straight into the EDA class "
+        print(f"\n{BOLD}{GREEN}→ Next hop:{RESET} EDA class "
             f"for full association hunting and leakage checks.")
 
         display(self.DDA.head())
-        return self.DDA, self.task_name

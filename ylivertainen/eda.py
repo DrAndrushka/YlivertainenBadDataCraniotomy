@@ -425,6 +425,7 @@ class YlivertainenEDA:
             )
 
         self.associations_table = associations_table
+
         return associations_table
 
     #=============================================================
@@ -594,30 +595,27 @@ class YlivertainenEDA:
     #==============================================================
     
     def export_both_tables(self, export=False):
-        associations_path = self.root/'reports'/'tables'/f'(associations_table){self.task_name}.pickle'
-        feature_decisions_path = self.root/'reports'/'tables'/f'(feature_decisions_table){self.task_name}.pickle'
+        associations_path = self.root/'reports'/'tables'/f'(EDA_associations_table){self.task_name}.pickle'
+        feature_decisions_path = self.root/'reports'/'tables'/f'(EDA_feature_decisions_table){self.task_name}.pickle'
         if export:
             self.associations_table.to_pickle(associations_path)
             self.feature_decisions_table.to_pickle(feature_decisions_path)
-            print(f'✅ Successful EXPORT of feature_decisions_table')
+            print(f'✅ Successful EXPORT of EDA_feature_decisions_table')
             print(f'✅ Folder: {BLUE}{BOLD}ylivertainen/reports/tables/{RESET}')
-            print(f'✅ Feature Decisions Table: {BLUE}{BOLD}(feature_decisions_table){self.task_name}{RESET}')
-            print(f'✅ Associations Table: {BLUE}{BOLD}(associations_table){self.task_name}{RESET}')
+            print(f'✅ Feature Decisions Table: {BLUE}{BOLD}(EDA_feature_decisions_table){self.task_name}{RESET}')
+            print(f'✅ Associations Table: {BLUE}{BOLD}(EDA_associations_table){self.task_name}{RESET}')
             print(f'✅ FORMAT: {BLUE}{BOLD}pickle{RESET}\n')
         else:
 
             print(f'🔄 Gonna save in: {BLUE}{BOLD}ylivertainen/reports/tables/{RESET}')
-            print(f'🔄 Feature Decisions Table: {BLUE}{BOLD}(feature_decisions_table){self.task_name}{RESET}')
-            print(f'🔄 Associations Table: {BLUE}{BOLD}(associations_table){self.task_name}{RESET}')
+            print(f'🔄 Feature Decisions Table: {BLUE}{BOLD}(EDA_feature_decisions_table){self.task_name}{RESET}')
+            print(f'🔄 Associations Table: {BLUE}{BOLD}(EDA_associations_table){self.task_name}{RESET}')
             print(f'🔄 FORMAT: {BLUE}{BOLD}pickle{RESET}')
             print(f'===== {BOLD}export={BLUE}True{RESET} to save =====\n')
     
-    #==============================================================
-    #                      EXPORT EDA DF 
-    #==============================================================
-    def prepare_EDA(self):
+    
         print("═" * 70)
-        print(f"{BOLD}🧠 EDA COMPLETE — FULL BRAIN ANGIOGRAM ACQUIRED{RESET}")
+        print(f"{BOLD}🧠 EDA COMPLETE — FULL BRAIN ANGIOGRAM ACQUIRED — {RED}{self.task_name.upper()}{RESET}")
         print("─" * 70)
 
         n_rows, n_cols = self.EDA.shape
@@ -633,5 +631,4 @@ class YlivertainenEDA:
             f"\n                        you push through — "
             f"\n                          turn this map into hard feature decisions and a clean model frame.")
 
-        display(self.EDA.head())
-        return self.EDA, self.task_name
+        display(self.EDA.head(1))

@@ -28,7 +28,7 @@ def apply_inclusion_criteria(cohort_df, inclusion_criteria):
 #================================================
 #              BUILD AGREEMENT COHORT 
 #================================================
-def build_stroke_agreement_cohort(pickle: pd.DataFrame, task: TaskConfig) -> tuple[pd.DataFrame, dict]:   # Tuple[...] there is a type that takes other types as parameters
+def build_stroke_agreement_cohort(pickle: pd.DataFrame, task: TaskConfig, all_tasks: list[TaskConfig]) -> tuple[pd.DataFrame, dict]:   # Tuple[...] there is a type that takes other types as parameters
     
     if isinstance(pickle, pd.DataFrame):
         cleaned_df = pickle
@@ -79,8 +79,8 @@ def build_stroke_agreement_cohort(pickle: pd.DataFrame, task: TaskConfig) -> tup
     #=================================================#
     cohort_df = cohort_df[cohort_df.included_in_cohort == True]
     match_unneeded = []
-    if 'match' in task.target_column:
-        match_unneeded = [col for col in cohort_df.columns if 'match' in col]
+    for task in all_tasks:
+        match_unneeded.append(task.target_column)
     no_missing_missing = [col for col in cohort_df.columns if col.endswith('_missing') and cohort_df[col].sum() == 0]
     drop_cols = (['included_in_cohort', 'cohort_exclusion_reason'] +
                  no_missing_missing +
@@ -88,6 +88,9 @@ def build_stroke_agreement_cohort(pickle: pd.DataFrame, task: TaskConfig) -> tup
     cohort_df = cohort_df.drop(columns=drop_cols, errors='ignore')
     #=================================================#
 
+    target_to_first = ['row_id', 'target'] + [col for col in cohort_df.columns if col not in ['row_id', 'target']]
+    cohort_df = cohort_df[target_to_first]
+    
     display(cohort_df.head())
 
-    return (cohort_df, metadata)
+    return cohort_df, metadata
