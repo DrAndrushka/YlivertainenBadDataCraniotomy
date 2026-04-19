@@ -1,13 +1,13 @@
 """
-THE_REPORT.py — Ylivertainen HTML Report Generator
+the_report.py — Ylivertainen HTML Report Generator
 ====================================================
 Converts all pipeline artifacts (cohort → DDA → EDA → predictive)
 into a self-contained, dark-themed clinical HTML report.
 
-Location: ylivertainen/THE_REPORT.py
+Location: ylivertainen/the_report.py
 
 Usage (in notebook):
-    from ylivertainen.THE_REPORT import YlivertainenTheReport
+    from ylivertainen.the_report import YlivertainenTheReport
     report = YlivertainenTheReport(
         root=root,
         metadata=metadata,
@@ -667,7 +667,7 @@ code {
         Generated: {{ timestamp }}<br>
         Task: {{ task_name }}<br>
         Target: {{ target_col }}<br>
-        Report by: <code>THE_REPORT.py</code>
+        Report by: <code>the_report.py</code>
     </div>
 </aside>
 

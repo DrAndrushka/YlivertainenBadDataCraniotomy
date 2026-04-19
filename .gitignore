@@ -22,6 +22,7 @@ ENV/
 .coverage
 htmlcov/
 .tox/
+ylivertainen/tests/**/__pycache__/
 
 # Jupyter
 .ipynb_checkpoints/
@@ -53,7 +54,5 @@ Thumbs.db
 ylivertainen/data/raw/**
 ylivertainen/data/processed/**
 ylivertainen/reports/**
-ylivertainen/example_table/**
-
-# Keep public synthetic samples
-!ylivertainen/example_table/testtable_synthetic.csv
+!ylivertainen/reports/**/
+!ylivertainen/example_table/**

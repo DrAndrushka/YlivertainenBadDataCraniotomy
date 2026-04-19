@@ -22,9 +22,9 @@ from ylivertainen.cohort import apply_inclusion_criteria, build_stroke_agreement
 from ylivertainen.dda import YlivertainenDDA
 from ylivertainen.eda import YlivertainenEDA
 from ylivertainen.predictive_modeling import build_model_frame
-from ylivertainen.INFERENTIAL import YlivertainenInferential
-from ylivertainen.PREDICTIVE import YlivertainenPredictive
-from ylivertainen.THE_REPORT import YlivertainenTheReport
+from ylivertainen.inferential import YlivertainenInferential
+from ylivertainen.predictive import YlivertainenPredictive
+from ylivertainen.the_report import YlivertainenTheReport
 
 __all__ = [
     "__version__",

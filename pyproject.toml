@@ -7,13 +7,13 @@ name = "ylivertainen"
 version = "0.2.0"
 description = "Clinical tabular toolkit for cleaning, cohorting, DDA/EDA, inferential stats, predictive modeling, and reporting."
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 authors = [{ name = "Andris Zaguzovs" }]
 license = { text = "MIT" }
 keywords = ["clinical-data-science", "tabular-ml", "stroke", "ehr", "python"]
 classifiers = [
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
   "License :: OSI Approved :: MIT License",
   "Intended Audience :: Science/Research",
 ]

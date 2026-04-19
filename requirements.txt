@@ -1,4 +1,4 @@
-# Ylivertainen — runtime dependencies (Python 3.11+)
+# Ylivertainen — runtime dependencies (Python 3.12+)
 # Install: pip install -r requirements.txt
 # Keep this list aligned with [project.dependencies] in pyproject.toml.
 

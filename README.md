@@ -55,9 +55,9 @@ YlivertainenBadDataCraniotomy/
     ├── dda.py
     ├── eda.py
     ├── predictive_modeling.py
-    ├── INFERENTIAL.py
-    ├── PREDICTIVE.py
-    ├── THE_REPORT.py
+    ├── inferential.py
+    ├── predictive.py
+    ├── the_report.py
     ├── schema.py
     ├── notebooks/
     │   └── YLIVERTAINEN_CraniotomyForBadData.ipynb
@@ -112,7 +112,7 @@ print(y.__version__)  # 0.2.0
 
 ## Quick start 🚀
 
-Python 3.11+ required.
+Python 3.12+ required.
 
 ### Windows (PowerShell)
 
@@ -138,7 +138,7 @@ pip install -e .
 
 Run:
 
-- `ylivertainen/notebooks/YLIVERTAINEN_CraniotomyForBadData.ipynb`
+- `ylivertainen/notebooks/CraniotomyForBadData.ipynb`
 
 Recommended sequence:
 
@@ -167,8 +167,8 @@ python -m unittest discover -s ylivertainen/tests -p "test_*.py"
 ## Data + privacy 🔒
 
 - Real/sensitive data and generated artifacts are ignored by default in `.gitignore`
-- Public synthetic sample is intentionally whitelisted:
-  - `ylivertainen/example_table/testtable_synthetic.csv`
+- Public synthetic sample folder is intentionally whitelisted:
+  - `ylivertainen/example_table/`
 - Do not commit patient-identifying information
 
 ---
