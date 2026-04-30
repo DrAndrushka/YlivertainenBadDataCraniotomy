@@ -8,6 +8,7 @@ This file is intentionally structured as:
 
 import pandas as pd
 import pytest
+import re
 
 from ylivertainen.cleaning import YlivertainenDataCleaningSurg
 
@@ -25,16 +26,14 @@ def make_project():
 
     return _make_project
 
-
 # ==========================================================
 # Function: _resolve_duplicate_masks (HIGH)
 # ==========================================================
-# [ ] empty id list returns empty masks
-# [ ] missing id column raises ValueError
-# [ ] whitespace/case normalization finds duplicates
-# [ ] incomplete IDs are ignored (not counted as dupes)
+# [X] empty id list returns empty masks
+# [X] missing id column raises ValueError
+# [X] whitespace/case normalization finds duplicates
+# [X] incomplete IDs are ignored (not counted as dupes)
 
-# --- Write _resolve_duplicate_masks tests below ---
 def test_empty_id_returns_empty_masks(make_project):
     project = make_project(pd.DataFrame({"patient_card_no": ["123", "123"]}))
     id_cols, skipsfirst_dupe_mask, includesfirst_dupe_mask = project._resolve_duplicate_masks(None)
@@ -53,21 +52,60 @@ def test_normalization_finds_duplicates(make_project):
     assert skipsfirst_dupe_mask.sum() == 1
     assert includesfirst_dupe_mask.sum() == 2
 
-def incomplete_ids_not_counted_as_dupes(make_project):
-    pass
+def test_incomplete_ids_not_counted_as_dupes(make_project):
+    project = make_project(pd.DataFrame({"patient_card_no": ["yliver", "ylivertainen"]}))
+    id_cols, skipsfirst_dupe_mask, includesfirst_dupe_mask = project._resolve_duplicate_masks("patient_card_no")
+    assert skipsfirst_dupe_mask.sum() == 0
+    assert includesfirst_dupe_mask.sum() == 0
 
 # ==========================================================
 # Function: resolve_dupes (HIGH)
 # ==========================================================
-# [ ] include_first=True returns full duplicate groups
-# [ ] include_first=False returns only later duplicates
-# [ ] drop=True removes only later duplicates, keeps first rows
-# [ ] empty id list returns self and keeps row count
-# [ ] missing id column raises clear ValueError
+# [X] include_first=True returns full duplicate groups
+# [X] include_first=False returns only later duplicates
+# [X] drop=True removes only later duplicates, keeps first rows
+# [X] empty id list returns self and keeps row count
+# [X] missing id column raises clear ValueError
 
-# --- Write resolve_dupes tests below ---
+def test_include_first_true_returns_duplicate_groups(make_project):
+    project = make_project(pd.DataFrame({"patient_card_no": ["123", "123"]}))
+    _, __, includesfirst_dupe_mask = project._resolve_duplicate_masks("patient_card_no")
+    assert len(project.resolve_dupes(
+        id_cols="patient_card_no",
+        include_first=True,
+        drop=False
+        ).df[includesfirst_dupe_mask]) == 2
 
+def test_include_first_false_returns_later_duplicates(make_project):
+    project = make_project(pd.DataFrame({"patient_card_no": ["123", "123"]}))
+    _, skipsfirst_dupe_mask, __ = project._resolve_duplicate_masks("patient_card_no")
+    assert len(project.resolve_dupes(
+        id_cols="patient_card_no",
+        include_first=False,
+        drop=False
+        ).df[skipsfirst_dupe_mask]) == 1
 
+def test_drop_true_removes_only_later_duplicates(make_project):
+    project = make_project(pd.DataFrame({"patient_card_no": ["123", "123"]}))
+    assert len(project.resolve_dupes(
+        id_cols="patient_card_no",
+        include_first=False,
+        drop=True
+        ).df) == 1
+
+def test_empty_id_returns_self_and_keeps_row_count(make_project):
+    project = make_project(pd.DataFrame({"patient_card_no": ["123", "123"]}))
+    returned = project.resolve_dupes(
+        id_cols=None,
+        include_first=False,
+        drop=False)
+    assert returned is project
+    pd.testing.assert_frame_equal(project.df, returned.df)
+
+def test_missing_id_column_raises_value_error(make_project):
+    project = make_project(pd.DataFrame({"patient_card_no": ["123", "123"]}))
+    with pytest.raises(ValueError, match=re.escape("❌ ID columns not found: ['clear_which_column']")):
+        project.resolve_dupes(id_cols="clear_which_column")    
 
 # ==========================================================
 # Function: merge_dfs (HIGH)
@@ -78,8 +116,17 @@ def incomplete_ids_not_counted_as_dupes(make_project):
 # [ ] missing canonical columns become NaN via reindex (no KeyError)
 
 # --- Write merge_dfs tests below ---
+def test_empty_csv_list_raises_value_error(make_project):
+    pass
 
+def test_unknown_columns_dropped(make_project):
+    pass
 
+def test_alias_columns_renames_to_canonical_names(make_project):
+    pass
+
+def test_missing_canonical_columns_become_nan_via_reindex(make_project):
+    pass
 
 # ==========================================================
 # Function: apply_schema (MEDIUM)
