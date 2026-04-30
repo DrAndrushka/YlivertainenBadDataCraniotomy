@@ -604,10 +604,10 @@ class YlivertainenDataCleaningSurg:
                 key_df[col] = normalized.replace('', pd.NA)
 
         complete_id_mask = key_df.notna().all(axis=1)
-        later_dupe_mask = complete_id_mask & key_df.duplicated(subset=id_cols, keep='first')
-        group_dupe_mask = complete_id_mask & key_df.duplicated(subset=id_cols, keep=False)
+        skipsfirst_dupe_mask = complete_id_mask & key_df.duplicated(subset=id_cols, keep='first')
+        includesfirst_dupe_mask = complete_id_mask & key_df.duplicated(subset=id_cols, keep=False)
 
-        return id_cols, later_dupe_mask, group_dupe_mask
+        return id_cols, skipsfirst_dupe_mask, includesfirst_dupe_mask
     #=============================
 
     def resolve_dupes(self, id_cols, include_first: bool = True, drop: bool = False) -> "YlivertainenDataCleaningSurg":
@@ -615,14 +615,14 @@ class YlivertainenDataCleaningSurg:
         print(f"{BOLD}🔍 DUPE SEARCH {RESET}")
         print("─" * 70)
 
-        id_cols, later_dupe_mask, group_dupe_mask = self._resolve_duplicate_masks(id_cols)
+        id_cols, skipsfirst_dupe_mask, includesfirst_dupe_mask = self._resolve_duplicate_masks(id_cols)
 
         if len(id_cols) == 0:
             print(f'{BOLD}There are no ID columns{RESET}')
             display(self.df.iloc[0:0])
             return self
 
-        dup_mask = group_dupe_mask if include_first else later_dupe_mask
+        dup_mask = includesfirst_dupe_mask if include_first else skipsfirst_dupe_mask
         dupe_count = int(dup_mask.sum())
 
         if dupe_count > 0:
@@ -645,17 +645,17 @@ class YlivertainenDataCleaningSurg:
             print(f"{BOLD}🪚 DUPE REMOVAL {RESET}")
             print("─" * 70)
 
-            id_cols, later_dupe_mask, _ = self._resolve_duplicate_masks(id_cols)
+            id_cols, skipsfirst_dupe_mask, _ = self._resolve_duplicate_masks(id_cols)
 
             if len(id_cols) == 0:
                 print(f"{GREEN}{BOLD}✔ Dupe removal:{RESET} no ID columns provided — skipping duplicate removal")
                 return self
 
-            dupe_count = int(later_dupe_mask.sum())
+            dupe_count = int(skipsfirst_dupe_mask.sum())
 
             print(f"{GREEN}{BOLD}✔ Dupe removal:{RESET} removed {dupe_count} later duplicates based on complete normalized ID: {id_cols}")
 
-            self.df = self.df[~later_dupe_mask].reset_index(drop=True)
+            self.df = self.df[~skipsfirst_dupe_mask].reset_index(drop=True)
             return self
         else:
             return self
