@@ -164,6 +164,12 @@ def test_empty_csv_list_raises_value_error():
     with pytest.raises(ValueError, match=re.escape("❌ No CSV file/-s provided to merge_dfs")):
         YlivertainenDataCleaningSurg.merge_dfs([])    
 
+#=======================================
+#@pytest.mark.parametrize("raw, expected", [("  ABC  ", "abc"), (" 001 ", "001"),],)
+#=======================================
+#@pytest.mark.parametrize()
+
+
 def test_unknown_columns_dropped(tmp_path):
     input_df = pd.DataFrame({
         "Karte": ["W-001", "W-002"],
