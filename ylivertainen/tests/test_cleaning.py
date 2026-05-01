@@ -1,12 +1,19 @@
 """
-Pytest suite for `ylivertainen.cleaning`.
+Pytest suite for `ylivertainen.cleaning` with priority-based coverage.
 
-This module verifies high-priority cleaning behavior first
-(`_resolve_duplicate_masks`, `resolve_dupes`, `merge_dfs`),
-then expands toward medium/low-priority coverage.
+Current status:
+- Block 3 (HIGH priority) is implemented and green.
+- MEDIUM/LOW priority sections are planned and scaffolded below.
 
-Tests use small synthetic inputs and explicit assertions so
-transformations remain deterministic and easy to debug.
+Structure of this file:
+1) Shared fixtures
+2) Implemented test sections (HIGH)
+3) Planned test sections with TODO checklists and code-space placeholders
+
+Design note:
+- Deliberate double-cover exists for "empty id list does nothing":
+  - helper-level contract: `test_empty_id_returns_empty_masks`
+  - public API behavior: `test_empty_id_returns_self_and_keeps_row_count`
 """
 
 import pandas as pd
@@ -15,6 +22,25 @@ import re
 
 from ylivertainen.cleaning import YlivertainenDataCleaningSurg
 
+
+# ==========================================================
+# Roadmap (file-level TODO)
+# ==========================================================
+# [DONE] HIGH: _resolve_duplicate_masks
+# [DONE] HIGH: resolve_dupes
+# [DONE] HIGH: merge_dfs core tests
+# [TODO] HIGH/REFINE: parametrize merge_dfs scenario trio (shared Arrange pattern)
+#
+# [TODO] MEDIUM: apply_schema
+# [TODO] MEDIUM: apply_derived
+# [TODO] MEDIUM: cleanup
+# [TODO] MEDIUM: apply_nan_features
+#
+# [TODO] LOW: __str__
+# [TODO] LOW: pre_merge_check (smoke)
+# [TODO] LOW: ylivertainen_janitor (smoke)
+# [TODO] LOW: explore_values (smoke)
+# [TODO] LOW: cleaning_overview_and_commit (smoke)
 
 # ==========================================================
 # Shared fixture(s)
@@ -36,7 +62,16 @@ def make_project():
 # [X] missing id column raises ValueError
 # [X] whitespace/case normalization finds duplicates
 # [X] incomplete IDs are ignored (not counted as dupes)
+#
+# Note: `test_empty_id_returns_empty_masks` is intentionally paired with
+# `test_empty_id_returns_self_and_keeps_row_count` below. This is deliberate
+# double-cover at two levels:
+# - private helper contract (`_resolve_duplicate_masks`)
+# - public API behavior (`resolve_dupes`)
 
+# ---------------------------
+# Implemented tests
+# ---------------------------
 def test_empty_id_returns_empty_masks(make_project):
     project = make_project(pd.DataFrame({"patient_card_no": ["123", "123"]}))
     id_cols, skipsfirst_dupe_mask, includesfirst_dupe_mask = project._resolve_duplicate_masks(None)
@@ -50,7 +85,7 @@ def test_missing_id_col_raises_value_error(make_project):
         project._resolve_duplicate_masks("nonexisting_id_col")
 
 def test_normalization_finds_duplicates(make_project):
-    project = make_project(pd.DataFrame({"patient_card_no": ["YlivertAINen", "YlIvErTaInEn"]}))
+    project = make_project(pd.DataFrame({"patient_card_no": ["  YlivertAINen ", " YlIvErTaInEn    "]}))
     _id_cols, skipsfirst_dupe_mask, includesfirst_dupe_mask = project._resolve_duplicate_masks("patient_card_no")
     assert skipsfirst_dupe_mask.sum() == 1
     assert includesfirst_dupe_mask.sum() == 2
@@ -115,9 +150,14 @@ def test_missing_id_column_raises_value_error(make_project):
 # Function: merge_dfs (HIGH)
 # ==========================================================
 # [X] empty csv list raises ValueError
-# [ ] unknown columns dropped
-# [ ] alias columns renamed to canonical names
-# [ ] missing canonical columns become NaN via reindex (no KeyError)
+# [X] unknown columns dropped
+# [X] alias columns renamed to canonical names
+# [X] missing canonical columns become NaN via reindex (no KeyError)
+#
+# TODO: parametrize candidate
+# `test_unknown_columns_dropped`, `test_alias_columns_renames_to_canonical_names`,
+# and `test_missing_canonical_columns_become_nan_via_reindex` share the same Arrange pattern
+# (build input_df -> write csv via tmp_path -> call merge_dfs). Refactor with parametrize later.
 
 # --- Write merge_dfs tests below ---
 def test_empty_csv_list_raises_value_error():
@@ -158,14 +198,17 @@ def test_missing_canonical_columns_become_nan_via_reindex(tmp_path):
     assert result_df["patient_card_no"].isna().all()
 
 # ==========================================================
+# Planned sections (MEDIUM/LOW): TODO + code spaces
+# ==========================================================
+
+# ==========================================================
 # Function: apply_schema (MEDIUM)
 # ==========================================================
 # [ ] configured null replacements are applied
 # [ ] numeric conversion coerces invalid values to NaN
 # [ ] invalid kind in SCHEMA raises ValueError
 
-
-# --- Write apply_schema tests below ---
+# --- Code space: apply_schema tests ---
 
 
 
@@ -177,7 +220,7 @@ def test_missing_canonical_columns_become_nan_via_reindex(tmp_path):
 # [ ] timedelta branch requires datetime source columns
 # [ ] negative timedeltas converted to NA
 
-# --- Write apply_derived tests below ---
+# --- Code space: apply_derived tests ---
 
 
 
@@ -186,7 +229,7 @@ def test_missing_canonical_columns_become_nan_via_reindex(tmp_path):
 # ==========================================================
 # [ ] drops columns where SCHEMA keep=False
 
-# --- Write cleanup tests below ---
+# --- Code space: cleanup tests ---
 
 
 
@@ -196,7 +239,7 @@ def test_missing_canonical_columns_become_nan_via_reindex(tmp_path):
 # [ ] creates *_missing flags only for columns with NaNs
 # [ ] excludes derived columns from *_missing creation
 
-# --- Write apply_nan_features tests below ---
+# --- Code space: apply_nan_features tests ---
 
 
 # ==========================================================
@@ -205,7 +248,7 @@ def test_missing_canonical_columns_become_nan_via_reindex(tmp_path):
 # ==========================================================
 # [ ] returns string containing csv count and dataframe shape
 
-# --- Write __str__ tests below ---
+# --- Code space: __str__ tests ---
 
 
 
@@ -214,7 +257,7 @@ def test_missing_canonical_columns_become_nan_via_reindex(tmp_path):
 # ==========================================================
 # [ ] smoke test with tiny temp CSVs (no crash)
 
-# --- Write pre_merge_check tests below ---
+# --- Code space: pre_merge_check tests ---
 
 
 
@@ -223,7 +266,7 @@ def test_missing_canonical_columns_become_nan_via_reindex(tmp_path):
 # [ ] apply_all=False path works end-to-end
 # [ ] apply_all=True path works end-to-end
 
-# --- Write ylivertainen_janitor tests below ---
+# --- Code space: ylivertainen_janitor tests ---
 
 
 
@@ -232,7 +275,7 @@ def test_missing_canonical_columns_become_nan_via_reindex(tmp_path):
 # ==========================================================
 # [ ] smoke test with mixed dtypes (no crash)
 
-# --- Write explore_values tests below ---
+# --- Code space: explore_values tests ---
 
 
 
@@ -242,4 +285,4 @@ def test_missing_canonical_columns_become_nan_via_reindex(tmp_path):
 # [ ] returns dataframe object
 # [ ] smoke test prints summary without crashing
 
-# --- Write cleaning_overview_and_commit tests below ---
+# --- Code space: cleaning_overview_and_commit tests ---
