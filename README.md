@@ -50,7 +50,6 @@ YlivertainenBadDataCraniotomy/
     ├── aesthetics_helpers.py
     ├── cleaning.py
     ├── cohort.py
-    ├── columns_to_canonical.py
     ├── config.py
     ├── dda.py
     ├── eda.py
@@ -58,15 +57,17 @@ YlivertainenBadDataCraniotomy/
     ├── inferential.py
     ├── predictive.py
     ├── the_report.py
-    ├── schema.py
+    ├── schema.py          # ColSpec, SCHEMA, DERIVED, COLUMN_RENAME_MAP
     ├── notebooks/
     │   └── YLIVERTAINEN_CraniotomyForBadData.ipynb
     ├── tests/
-    │   └── test_cleaning_dupes.py
+    │   └── test_cleaning.py
     ├── reports/
     └── example_table/
         └── testtable_synthetic.csv
 ```
+
+Note: `COLUMN_RENAME_MAP` is defined in `ylivertainen/schema.py`.
 
 ---
 

@@ -6,8 +6,7 @@ import numpy as np
 from pathlib import Path
 from IPython.display import display, Markdown
 
-from ylivertainen.columns_to_canonical import COLUMN_RENAME_MAP
-from ylivertainen.schema import SCHEMA, DERIVED
+from ylivertainen.schema import COLUMN_RENAME_MAP, SCHEMA, DERIVED
 
 #============ ANSI Escape Codes for formating ============
 from ylivertainen.aesthetics_helpers import GREEN, YELLOW, ORANGE, RED, BOLD, BLUE, GRAY, RESET

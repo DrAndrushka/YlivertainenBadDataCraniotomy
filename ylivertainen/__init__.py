@@ -5,7 +5,7 @@ Public symbols are re-exported below; see README for golden path, task registry,
 pipeline notes (missingness policy in ``build_feature_decisions_table``, datetime handling,
 order of ``null_as_feature`` vs feature decisions).
 
-Lower-level: ``ylivertainen.schema`` (ColSpec, SCHEMA), ``ylivertainen.columns_to_canonical``.
+Lower-level: ``ylivertainen.schema`` (COLUMN_RENAME_MAP, ColSpec, SCHEMA, DERIVED).
 """
 
 __version__ = "0.2.0"

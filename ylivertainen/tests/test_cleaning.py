@@ -1,9 +1,12 @@
 """
-Test workspace for `ylivertainen/cleaning.py`.
+Pytest suite for `ylivertainen.cleaning`.
 
-This file is intentionally structured as:
-1) function-by-function TODO checklist
-2) coding space to implement tests right below each TODO block
+This module verifies high-priority cleaning behavior first
+(`_resolve_duplicate_masks`, `resolve_dupes`, `merge_dfs`),
+then expands toward medium/low-priority coverage.
+
+Tests use small synthetic inputs and explicit assertions so
+transformations remain deterministic and easy to debug.
 """
 
 import pandas as pd
@@ -48,15 +51,15 @@ def test_missing_id_col_raises_value_error(make_project):
 
 def test_normalization_finds_duplicates(make_project):
     project = make_project(pd.DataFrame({"patient_card_no": ["YlivertAINen", "YlIvErTaInEn"]}))
-    id_cols, skipsfirst_dupe_mask, includesfirst_dupe_mask = project._resolve_duplicate_masks("patient_card_no")
+    _id_cols, skipsfirst_dupe_mask, includesfirst_dupe_mask = project._resolve_duplicate_masks("patient_card_no")
     assert skipsfirst_dupe_mask.sum() == 1
     assert includesfirst_dupe_mask.sum() == 2
 
 def test_incomplete_ids_not_counted_as_dupes(make_project):
-    project = make_project(pd.DataFrame({"patient_card_no": ["yliver", "ylivertainen"]}))
-    id_cols, skipsfirst_dupe_mask, includesfirst_dupe_mask = project._resolve_duplicate_masks("patient_card_no")
-    assert skipsfirst_dupe_mask.sum() == 0
-    assert includesfirst_dupe_mask.sum() == 0
+    project = make_project(pd.DataFrame({"patient_card_no": ["yliver", "ylivertainen", "", " ", "something else", pd.NA, "yliver"]}))
+    _id_cols, skipsfirst_dupe_mask, includesfirst_dupe_mask = project._resolve_duplicate_masks("patient_card_no")
+    assert skipsfirst_dupe_mask.sum() == 1
+    assert includesfirst_dupe_mask.sum() == 2
 
 # ==========================================================
 # Function: resolve_dupes (HIGH)
@@ -69,7 +72,7 @@ def test_incomplete_ids_not_counted_as_dupes(make_project):
 
 def test_include_first_true_returns_duplicate_groups(make_project):
     project = make_project(pd.DataFrame({"patient_card_no": ["123", "123"]}))
-    _, __, includesfirst_dupe_mask = project._resolve_duplicate_masks("patient_card_no")
+    _id_cols, _skipsfirst_dupe_mask, includesfirst_dupe_mask = project._resolve_duplicate_masks("patient_card_no")
     assert len(project.resolve_dupes(
         id_cols="patient_card_no",
         include_first=True,
@@ -78,7 +81,7 @@ def test_include_first_true_returns_duplicate_groups(make_project):
 
 def test_include_first_false_returns_later_duplicates(make_project):
     project = make_project(pd.DataFrame({"patient_card_no": ["123", "123"]}))
-    _, skipsfirst_dupe_mask, __ = project._resolve_duplicate_masks("patient_card_no")
+    _id_cols, skipsfirst_dupe_mask, _includesfirst_dupe_mask = project._resolve_duplicate_masks("patient_card_no")
     assert len(project.resolve_dupes(
         id_cols="patient_card_no",
         include_first=False,
@@ -95,12 +98,13 @@ def test_drop_true_removes_only_later_duplicates(make_project):
 
 def test_empty_id_returns_self_and_keeps_row_count(make_project):
     project = make_project(pd.DataFrame({"patient_card_no": ["123", "123"]}))
+    before = project.df.copy(deep=True)
     returned = project.resolve_dupes(
         id_cols=None,
         include_first=False,
         drop=False)
     assert returned is project
-    pd.testing.assert_frame_equal(project.df, returned.df)
+    pd.testing.assert_frame_equal(before, project.df)
 
 def test_missing_id_column_raises_value_error(make_project):
     project = make_project(pd.DataFrame({"patient_card_no": ["123", "123"]}))
@@ -116,19 +120,42 @@ def test_missing_id_column_raises_value_error(make_project):
 # [ ] missing canonical columns become NaN via reindex (no KeyError)
 
 # --- Write merge_dfs tests below ---
-def test_empty_csv_list_raises_value_error(make_project):
-    project = make_project(pd.DataFrame({"patient_card_no": ["123", "123"]}))
+def test_empty_csv_list_raises_value_error():
     with pytest.raises(ValueError, match=re.escape("❌ No CSV file/-s provided to merge_dfs")):
-        project.merge_dfs(csvs=project.csvs)    
+        YlivertainenDataCleaningSurg.merge_dfs([])    
 
-#def test_unknown_columns_dropped(make_project):
+def test_unknown_columns_dropped(tmp_path):
+    input_df = pd.DataFrame({
+        "Karte": ["W-001", "W-002"],
+        "commentarios": ["Witcher", "Sorceress"],
+        "hospital of admission": ["Kaer Morhen", "Aretuza"],
+        "Bloede pest": ["Catriona", "Nilfgaard plague"]})
+    csv_path = tmp_path / "witcher.csv"
+    input_df.to_csv(csv_path, index=False)
+    result_df = YlivertainenDataCleaningSurg.merge_dfs([csv_path])
+    assert "commentarios" not in result_df.columns
+    assert "hospital of admission" not in result_df.columns
+    assert "Bloede pest" not in result_df.columns
 
+def test_alias_columns_renames_to_canonical_names(tmp_path):
+    input_df = pd.DataFrame({
+        "Karte": ["W-001", "W-002"],
+        "Bloede pest": ["Catriona", "Nilfgaard plague"]})
+    csv_path = tmp_path / "witcher.csv"
+    input_df.to_csv(csv_path, index=False)
+    result_df = YlivertainenDataCleaningSurg.merge_dfs([csv_path])
+    assert "patient_card_no" in result_df.columns
+    assert result_df["patient_card_no"].tolist() == ["W-001", "W-002"]
 
-#def test_alias_columns_renames_to_canonical_names(make_project):
-
-
-#def test_missing_canonical_columns_become_nan_via_reindex(make_project):
-
+def test_missing_canonical_columns_become_nan_via_reindex(tmp_path):
+    input_df = pd.DataFrame({
+        "Kartuka": ["W-001", "W-002"],
+        "Bloede pest": ["Catriona", "Nilfgaard plague"]})
+    csv_path = tmp_path / "witcher.csv"
+    input_df.to_csv(csv_path, index=False)
+    result_df = YlivertainenDataCleaningSurg.merge_dfs([csv_path])
+    assert "patient_card_no" in result_df.columns
+    assert result_df["patient_card_no"].isna().all()
 
 # ==========================================================
 # Function: apply_schema (MEDIUM)
