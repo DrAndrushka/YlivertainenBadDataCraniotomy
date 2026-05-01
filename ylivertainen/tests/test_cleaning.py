@@ -110,23 +110,25 @@ def test_missing_id_column_raises_value_error(make_project):
 # ==========================================================
 # Function: merge_dfs (HIGH)
 # ==========================================================
-# [ ] empty csv list raises ValueError
+# [X] empty csv list raises ValueError
 # [ ] unknown columns dropped
 # [ ] alias columns renamed to canonical names
 # [ ] missing canonical columns become NaN via reindex (no KeyError)
 
 # --- Write merge_dfs tests below ---
 def test_empty_csv_list_raises_value_error(make_project):
-    pass
+    project = make_project(pd.DataFrame({"patient_card_no": ["123", "123"]}))
+    with pytest.raises(ValueError, match=re.escape("❌ No CSV file/-s provided to merge_dfs")):
+        project.merge_dfs(csvs=project.csvs)    
 
-def test_unknown_columns_dropped(make_project):
-    pass
+#def test_unknown_columns_dropped(make_project):
 
-def test_alias_columns_renames_to_canonical_names(make_project):
-    pass
 
-def test_missing_canonical_columns_become_nan_via_reindex(make_project):
-    pass
+#def test_alias_columns_renames_to_canonical_names(make_project):
+
+
+#def test_missing_canonical_columns_become_nan_via_reindex(make_project):
+
 
 # ==========================================================
 # Function: apply_schema (MEDIUM)
