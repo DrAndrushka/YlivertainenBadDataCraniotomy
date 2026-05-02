@@ -4,6 +4,7 @@
 import pandas as pd
 import numpy as np
 from pathlib import Path
+from ylivertainen._pathing import setup_repo_path
 from IPython.display import display, Markdown
 
 from ylivertainen.schema import COLUMN_RENAME_MAP, SCHEMA, DERIVED
@@ -15,12 +16,12 @@ from ylivertainen.aesthetics_helpers import GREEN, YELLOW, ORANGE, RED, BOLD, BL
 #            Pre merge column name check
 #==================================================
 def pre_merge_check(
-    root: Path,
     colname_length: int = 15,
     show_dfs: bool = False,
     ) -> None:
     
-    raw_dir = root / "data" / "raw"
+    root = setup_repo_path()
+    raw_dir = root / "ylivertainen" / "data" / "raw"
     csvs = sorted(raw_dir.glob("*.csv"))    # <== takes all CSVs from ylivertainen/data/raw
     
     base_cols = None

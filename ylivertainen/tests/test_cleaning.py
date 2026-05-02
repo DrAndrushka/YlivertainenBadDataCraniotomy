@@ -16,6 +16,10 @@ Design note:
   - public API behavior: `test_empty_id_returns_self_and_keeps_row_count`
 """
 
+from pandas.errors import Pandas4Warning
+from ylivertainen._pathing import setup_repo_path
+root = setup_repo_path()
+
 import pandas as pd
 import pytest
 import re
@@ -52,8 +56,13 @@ def make_project():
         project.csvs = []
         project.df = df.copy()
         return project
-
     return _make_project
+
+@pytest.fixture
+def synthetic_df():
+    location = root/ "ylivertainen" / "example_table" / "testtable_synthetic.csv"
+    synthetic_df = YlivertainenDataCleaningSurg([location]).df.iloc[[0]].copy()
+    return synthetic_df
 
 # ==========================================================
 # Function: _resolve_duplicate_masks (HIGH)
@@ -164,44 +173,30 @@ def test_empty_csv_list_raises_value_error():
     with pytest.raises(ValueError, match=re.escape("❌ No CSV file/-s provided to merge_dfs")):
         YlivertainenDataCleaningSurg.merge_dfs([])    
 
-#=======================================
-#@pytest.mark.parametrize("raw, expected", [("  ABC  ", "abc"), (" 001 ", "001"),],)
-#=======================================
-#@pytest.mark.parametrize()
+@pytest.mark.parametrize(
+    "input_df, check", [
+        (pd.DataFrame({
+            "Karte": ["W-001", "W-002"],
+            "commentarios": ["Witcher", "Sorceress"],
+            "hospital of admission": ["Kaer Morhen", "Aretuza"],
+            "Bloede pest": ["Catriona", "Nilfgaard plague"]}),
+        lambda df: "commentarios" not in df.columns),
+        (pd.DataFrame({
+            "Karte": ["W-001", "W-002"],
+            "Bloede pest": ["Catriona", "Nilfgaard plague"]}),
+        lambda df: df["patient_card_no"].tolist() == ["W-001", "W-002"]),
+        (pd.DataFrame({
+            "Kartuka": ["W-001", "W-002"],
+            "Bloede pest": ["Catriona", "Nilfgaard plague"]}),
+        lambda df: df["patient_card_no"].isna().all())
+    ], ids=["unknown_dropped", "alias_renamed", "missing_becomes_nan"]
+)
 
-
-def test_unknown_columns_dropped(tmp_path):
-    input_df = pd.DataFrame({
-        "Karte": ["W-001", "W-002"],
-        "commentarios": ["Witcher", "Sorceress"],
-        "hospital of admission": ["Kaer Morhen", "Aretuza"],
-        "Bloede pest": ["Catriona", "Nilfgaard plague"]})
+def test_merge_dfs_column_behaviour(tmp_path, input_df, check):
     csv_path = tmp_path / "witcher.csv"
     input_df.to_csv(csv_path, index=False)
     result_df = YlivertainenDataCleaningSurg.merge_dfs([csv_path])
-    assert "commentarios" not in result_df.columns
-    assert "hospital of admission" not in result_df.columns
-    assert "Bloede pest" not in result_df.columns
-
-def test_alias_columns_renames_to_canonical_names(tmp_path):
-    input_df = pd.DataFrame({
-        "Karte": ["W-001", "W-002"],
-        "Bloede pest": ["Catriona", "Nilfgaard plague"]})
-    csv_path = tmp_path / "witcher.csv"
-    input_df.to_csv(csv_path, index=False)
-    result_df = YlivertainenDataCleaningSurg.merge_dfs([csv_path])
-    assert "patient_card_no" in result_df.columns
-    assert result_df["patient_card_no"].tolist() == ["W-001", "W-002"]
-
-def test_missing_canonical_columns_become_nan_via_reindex(tmp_path):
-    input_df = pd.DataFrame({
-        "Kartuka": ["W-001", "W-002"],
-        "Bloede pest": ["Catriona", "Nilfgaard plague"]})
-    csv_path = tmp_path / "witcher.csv"
-    input_df.to_csv(csv_path, index=False)
-    result_df = YlivertainenDataCleaningSurg.merge_dfs([csv_path])
-    assert "patient_card_no" in result_df.columns
-    assert result_df["patient_card_no"].isna().all()
+    assert check(result_df)
 
 # ==========================================================
 # Planned sections (MEDIUM/LOW): TODO + code spaces
@@ -215,6 +210,18 @@ def test_missing_canonical_columns_become_nan_via_reindex(tmp_path):
 # [ ] invalid kind in SCHEMA raises ValueError
 
 # --- Code space: apply_schema tests ---
+import numpy as np
+
+def test_apply_schema_null_replacement_works(make_project, synthetic_df):
+    project = make_project(synthetic_df)
+    with pytest.warns(Pandas4Warning, match="Constructing a Categorical"):
+        project = project.apply_schema()
+    project = project.apply_schema()
+    assert pd.isna(project.df["GKS"].iloc[0])       # works for categorical
+    assert pd.isna(project.df["vecums"].iloc[0])    # works for numerical
+
+
+
 
 
 

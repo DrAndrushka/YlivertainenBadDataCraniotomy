@@ -8,7 +8,7 @@ from pathlib import Path
 import sys
 
 def setup_repo_path() -> Path:
-    def find_root(marker: str = "predictive_modeling.py") -> Path:
+    def find_root(marker: str = "README.md") -> Path:
         p = Path.cwd().resolve()
         for folder in [p, *p.parents]:
             if (folder / marker).is_file():
