@@ -16,7 +16,6 @@ Design note:
   - public API behavior: `test_empty_id_returns_self_and_keeps_row_count`
 """
 
-from pandas.errors import Pandas4Warning
 from ylivertainen._pathing import setup_repo_path
 root = setup_repo_path()
 
@@ -25,6 +24,11 @@ import pytest
 import re
 
 from ylivertainen.cleaning import YlivertainenDataCleaningSurg
+import ylivertainen.cleaning as cleaning
+    # Because cleaning.py imports SCHEMA into its own module namespace,
+    # you can reference and patch it as cleaning.SCHEMA in tests.
+    # That’s the one apply_schema() reads during execution.
+from ylivertainen.schema import ColSpec
 
 
 # ==========================================================
@@ -61,7 +65,7 @@ def make_project():
 @pytest.fixture
 def synthetic_df():
     location = root/ "ylivertainen" / "example_table" / "testtable_synthetic.csv"
-    synthetic_df = YlivertainenDataCleaningSurg([location]).df.iloc[[0]].copy()
+    synthetic_df = YlivertainenDataCleaningSurg([location]).df.iloc[:10,:].copy()      # first 10 rows, all columns
     return synthetic_df
 
 # ==========================================================
@@ -205,45 +209,82 @@ def test_merge_dfs_column_behaviour(tmp_path, input_df, check):
 # ==========================================================
 # Function: apply_schema (MEDIUM)
 # ==========================================================
-# [ ] configured null replacements are applied
-# [ ] numeric conversion coerces invalid values to NaN
-# [ ] invalid kind in SCHEMA raises ValueError
+# [X] configured null replacements are applied
+# [X] numeric conversion coerces invalid values to NaN
+# [X] invalid kind in SCHEMA raises ValueError
 
 # --- Code space: apply_schema tests ---
-import numpy as np
-
 def test_apply_schema_null_replacement_works(make_project, synthetic_df):
     project = make_project(synthetic_df)
-    with pytest.warns(Pandas4Warning, match="Constructing a Categorical"):
-        project = project.apply_schema()
     project = project.apply_schema()
     assert pd.isna(project.df["GKS"].iloc[0])       # works for categorical
     assert pd.isna(project.df["vecums"].iloc[0])    # works for numerical
 
-
-
-
-
+def test_apply_schema_invalid_kind_value_error(make_project, synthetic_df, monkeypatch):
+    bad_schema = list(cleaning.SCHEMA)
+    bad_schema[-1] = ColSpec(name="patient_card_no", kind="not_a_real_kind")
+    monkeypatch.setattr(cleaning, "SCHEMA", bad_schema)
+    project = make_project(synthetic_df.copy(deep=True))
+    with pytest.raises(ValueError, match="No such dtype"):
+        project.apply_schema()
 
 # ==========================================================
 # Function: apply_derived (MEDIUM)
 # ==========================================================
-# [ ] match branch creates boolean agreement column
-# [ ] datetime branch rejects unknown datetime unit
-# [ ] timedelta branch requires datetime source columns
-# [ ] negative timedeltas converted to NA
+# [X] match branch creates boolean agreement column
+# [X] datetime branch rejects unknown datetime unit
+# [X] timedelta branch requires datetime source columns
+# [X] negative timedeltas converted to NA
 
 # --- Code space: apply_derived tests ---
+def test_apply_derived_creates_boolean_match_column(make_project, synthetic_df):
+    project = make_project(synthetic_df)
+    project = project.apply_schema().apply_derived()
+    match_cols_expected = 0
+    for ColSpec in cleaning.DERIVED:
+        if ColSpec.kind == "match":
+            match_cols_expected += 1
+    match_cols_made = [col for col in project.df.columns if col.endswith("_match")]
+    assert match_cols_expected == len(match_cols_made)
 
+def test_apply_derived_datetime_branch_shows_rejected_values(make_project, synthetic_df, capsys):
+    project = make_project(synthetic_df)
+    project = project.apply_schema().apply_derived()
+    out = capsys.readouterr().out
+    out = re.sub(r"\x1b\[[0-9;]*m", "", out)
+    assert pd.isna(project.df["lidzPSKUS_timedelta_minutes"].iloc[3])
+    assert """izsaukuma_laiks converted to "datetime" | Values that became NaN: 1 | List: ['thirty first december 2025']""" in out
 
+def test_timedelta_branch_requires_datetime_source_cols(make_project, synthetic_df, monkeypatch):
+    bad_derived = list(cleaning.DERIVED)
+    bad_derived[-1] = ColSpec(
+        name="lidzPSKUS_timedelta_minutes",
+        kind="timedelta",
+        timedelta_units='minutes',
+        derive_from=("FastTest", "nogadasana_PSKUS_laiks"),
+        keep=False)
+    monkeypatch.setattr(cleaning, "DERIVED", bad_derived)
+    project = make_project(synthetic_df.copy(deep=True))
+    with pytest.raises(ValueError, match="Derivable columns must be datetime"):
+        project.apply_schema().apply_derived()
+
+def test_negative_timedeltas_converted_to_na(make_project, synthetic_df, capsys):
+    project = make_project(synthetic_df)
+    project = project.apply_schema().apply_derived()
+    out = capsys.readouterr().out
+    out = re.sub(r"\x1b\[[0-9;]*m", "", out)
+    assert """also trashed NEGATIVE timedeltas: 1""" in out
 
 # ==========================================================
 # Function: cleanup (MEDIUM)
 # ==========================================================
-# [ ] drops columns where SCHEMA keep=False
+# [X] drops columns where SCHEMA keep=False
 
 # --- Code space: cleanup tests ---
-
+def test_cleanup_drops_cols_where_keep_is_false(make_project, synthetic_df):
+    project = make_project(synthetic_df)
+    project = project.apply_schema().apply_derived().cleanup()
+    assert 'izsaukuma_laiks' not in project.df.columns
 
 
 # ==========================================================
@@ -253,6 +294,12 @@ def test_apply_schema_null_replacement_works(make_project, synthetic_df):
 # [ ] excludes derived columns from *_missing creation
 
 # --- Code space: apply_nan_features tests ---
+def test_apply_nan_features_creates_only_for_cols_with_nans(make_project, synthetic_df):
+    project = make_project(synthetic_df)
+    expected_nan_cols = [f"{col}_missing" for col in project.df if project.df[col].isna().sum() > 0]
+    project = project.apply_nan_features()
+    nan_cols = [col for col in project.df if col.endswith("_missing")]
+    assert set(expected_nan_cols) == set(nan_cols)
 
 
 # ==========================================================

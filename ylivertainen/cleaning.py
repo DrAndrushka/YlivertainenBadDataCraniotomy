@@ -241,7 +241,18 @@ class YlivertainenDataCleaningSurg:
                     before_NaNs = self.df[ColSpec.name].isna().sum()
                     self.df[ColSpec.name] = self.df[ColSpec.name].replace(null, np.nan)
                     after_NaNs = self.df[ColSpec.name].isna().sum()
-                    print(f'"{null}" ⇒ "NaN" @ {BLUE}{BOLD}{ColSpec.name}{RESET} | Values that became NaN: {after_NaNs - before_NaNs}')
+                    print(f'{null} ⇒ NaN @ {BLUE}{BOLD}{ColSpec.name}{RESET} | Values that became NaN: {after_NaNs - before_NaNs}')
+            elif ColSpec.ordered:
+                vals_to_allow = [val for val in ColSpec.ordered]
+                null_vals = [val for val in self.df[ColSpec.name].unique() if val not in vals_to_allow]
+                if len(null_vals) != 0:
+                    NaN_replaced_cols.append(ColSpec.name)
+                for null in null_vals:
+                    if not pd.isna(null):
+                        before_NaNs = self.df[ColSpec.name].isna().sum()
+                        self.df[ColSpec.name] = self.df[ColSpec.name].replace(null, np.nan)
+                        after_NaNs = self.df[ColSpec.name].isna().sum()
+                        print(f'{null} ⇒ NaN @ {BLUE}{BOLD}{ColSpec.name}{RESET} | Values that became NaN: {after_NaNs - before_NaNs}')
         # ===== give positive feedback for all columns found =====
         if len(NaN_replaced_cols) > 0:
             print(f"{GREEN}{BOLD}✔ NaN pass:{RESET}\n"
@@ -299,13 +310,8 @@ class YlivertainenDataCleaningSurg:
             elif ColSpec.kind == 'categorical':
                 if isinstance(ColSpec.ordered, tuple):
                     self.df[ColSpec.name] = self.df[ColSpec.name].astype("Int64")
-                    col_before = self.df[ColSpec.name].copy()
-                    before_NaNs = col_before.isna().sum()
                     col_after = pd.Categorical(self.df[ColSpec.name], list(ColSpec.ordered), ordered=True)
-                    after_NaNs = col_after.isna().sum()
-                    gained_nan_mask = col_before.notna() & col_after.isna()
-                    replaced_values = col_before[gained_nan_mask].dropna().unique().tolist()
-                    print(f'{col_name} converted to "Categorical (ordered)" | Values that became NaN: {after_NaNs - before_NaNs} | List: {replaced_values}')
+                    print(f'{col_name} converted to "Categorical (ordered)"')
                     self.df[ColSpec.name] = col_after
 
                 else:
@@ -383,11 +389,11 @@ class YlivertainenDataCleaningSurg:
             #============================
             elif ColSpec.kind == 'datetime':
                 if not ColSpec.derive_from:
-                    raise KeyError(f'❌ Forgot derive_from for one of the ColSpec.timedelta in DERIVED')
+                    raise KeyError(f'❌ Forgot derive_from for one of the ColSpec.datetime in DERIVED')
                 if not ColSpec.datetime_units:
-                    raise KeyError(f'❌ Forgot datetime_units for one of the ColSpec.timedelta in DERIVED')
+                    raise KeyError(f'❌ Forgot datetime_units for one of the ColSpec.datetime in DERIVED')
                 if not ColSpec.name:
-                    raise KeyError(f'❌ Forgot name for one of the ColSpec.timedelta in DERIVED')
+                    raise KeyError(f'❌ Forgot name for one of the ColSpec.datetime in DERIVED')
             
                 source_col = ColSpec.derive_from[0]
                 target_col = ColSpec.name
@@ -463,7 +469,7 @@ class YlivertainenDataCleaningSurg:
                     raise KeyError(f'❌ Forgot timedelta_units for one of the ColSpec.timedelta in DERIVED')
                 if not ColSpec.name:
                     raise KeyError(f'❌ Forgot name for one of the ColSpec.timedelta in DERIVED')
- 
+                
                 start_col, end_col = ColSpec.derive_from
 
                 missing_cols = [col for col in (start_col, end_col) if col not in df.columns]

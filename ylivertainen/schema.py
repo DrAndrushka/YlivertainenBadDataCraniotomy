@@ -3,6 +3,7 @@
 #=====================================
 from dataclasses import dataclass
 from typing import Literal
+import numpy as np
 
 #================================================
 #    Pre-merge column renaming so they match
@@ -64,13 +65,15 @@ class ColSpec:
     def __post_init__(self):
         #print("DEBUG:", self.kind, self.timedelta_from)
         if self.kind != "categorical" and self.ordered is not None:
-            raise ValueError("❌ trying to order non-categorical data")
+                raise ValueError("❌ trying to order non-categorical data")
         if self.ordered is not None and len(self.ordered) <= 1:
-            raise ValueError("❌ While ordering categoricals: input is <=1 value")
+                raise ValueError("❌ While ordering categoricals: input is <=1 value")
         if self.kind == 'timedelta' and not self.timedelta_units:
-            raise ValueError("❌ Specify which units to put in timedelta")
+                raise ValueError("❌ Specify which units to put in timedelta")
         if self.kind == 'match' and not self.match_by:
-            raise ValueError("❌ Specify how to create the match column")
+                raise ValueError("❌ Specify how to create the match column")
+        if self.ordered is not None and self.nulls is not None:
+                raise ValueError("❌ Redundant 'nulls' added. Unused values in 'ordered' are automatically filtered out")
 
 #================================================
 #=============== SCHEMA & DERIVED ===============
