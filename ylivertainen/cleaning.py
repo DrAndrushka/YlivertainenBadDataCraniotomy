@@ -666,7 +666,6 @@ class YlivertainenDataCleaningSurg:
         else:
             return self
 
-    
     #==============================================================
     #                   Save cleaned df to csv
     #==============================================================

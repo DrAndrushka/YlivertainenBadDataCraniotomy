@@ -1,14 +1,10 @@
 """
-Pytest suite for `ylivertainen.cleaning` with priority-based coverage.
+Test suite for `ylivertainen.cleaning`.
 
-Current status:
-- Block 3 (HIGH priority) is implemented and green.
-- MEDIUM/LOW priority sections are planned and scaffolded below.
-
-Structure of this file:
+Layout:
 1) Shared fixtures
-2) Implemented test sections (HIGH)
-3) Planned test sections with TODO checklists and code-space placeholders
+2) Core behavior tests by method
+3) End-to-end and smoke tests
 
 Design note:
 - Deliberate double-cover exists for "empty id list does nothing":
@@ -16,42 +12,21 @@ Design note:
   - public API behavior: `test_empty_id_returns_self_and_keeps_row_count`
 """
 
+from pathlib import Path
 from ylivertainen._pathing import setup_repo_path
 root = setup_repo_path()
 
 import pandas as pd
 import pytest
 import re
+import shutil
 
-from ylivertainen.cleaning import YlivertainenDataCleaningSurg
+from ylivertainen.cleaning import YlivertainenDataCleaningSurg, pre_merge_check
 import ylivertainen.cleaning as cleaning
-    # Because cleaning.py imports SCHEMA into its own module namespace,
-    # you can reference and patch it as cleaning.SCHEMA in tests.
-    # That’s the one apply_schema() reads during execution.
 from ylivertainen.schema import ColSpec
 
-
 # ==========================================================
-# Roadmap (file-level TODO)
-# ==========================================================
-# [DONE] HIGH: _resolve_duplicate_masks
-# [DONE] HIGH: resolve_dupes
-# [DONE] HIGH: merge_dfs core tests
-# [TODO] HIGH/REFINE: parametrize merge_dfs scenario trio (shared Arrange pattern)
-#
-# [TODO] MEDIUM: apply_schema
-# [TODO] MEDIUM: apply_derived
-# [TODO] MEDIUM: cleanup
-# [TODO] MEDIUM: apply_nan_features
-#
-# [TODO] LOW: __str__
-# [TODO] LOW: pre_merge_check (smoke)
-# [TODO] LOW: ylivertainen_janitor (smoke)
-# [TODO] LOW: explore_values (smoke)
-# [TODO] LOW: cleaning_overview_and_commit (smoke)
-
-# ==========================================================
-# Shared fixture(s)
+# Shared Fixtures
 # ==========================================================
 @pytest.fixture
 def make_project():
@@ -64,17 +39,14 @@ def make_project():
 
 @pytest.fixture
 def synthetic_df():
-    location = root/ "ylivertainen" / "example_table" / "testtable_synthetic.csv"
+    location = root / "ylivertainen" / "example_table" / "testtable_synthetic.csv"
     synthetic_df = YlivertainenDataCleaningSurg([location]).df.iloc[:10,:].copy()      # first 10 rows, all columns
     return synthetic_df
 
 # ==========================================================
-# Function: _resolve_duplicate_masks (HIGH)
+# _resolve_duplicate_masks
 # ==========================================================
-# [X] empty id list returns empty masks
-# [X] missing id column raises ValueError
-# [X] whitespace/case normalization finds duplicates
-# [X] incomplete IDs are ignored (not counted as dupes)
+# Covers empty IDs, missing ID columns, normalization, and incomplete IDs.
 #
 # Note: `test_empty_id_returns_empty_masks` is intentionally paired with
 # `test_empty_id_returns_self_and_keeps_row_count` below. This is deliberate
@@ -82,9 +54,6 @@ def synthetic_df():
 # - private helper contract (`_resolve_duplicate_masks`)
 # - public API behavior (`resolve_dupes`)
 
-# ---------------------------
-# Implemented tests
-# ---------------------------
 def test_empty_id_returns_empty_masks(make_project):
     project = make_project(pd.DataFrame({"patient_card_no": ["123", "123"]}))
     id_cols, skipsfirst_dupe_mask, includesfirst_dupe_mask = project._resolve_duplicate_masks(None)
@@ -110,13 +79,9 @@ def test_incomplete_ids_not_counted_as_dupes(make_project):
     assert includesfirst_dupe_mask.sum() == 2
 
 # ==========================================================
-# Function: resolve_dupes (HIGH)
+# resolve_dupes
 # ==========================================================
-# [X] include_first=True returns full duplicate groups
-# [X] include_first=False returns only later duplicates
-# [X] drop=True removes only later duplicates, keeps first rows
-# [X] empty id list returns self and keeps row count
-# [X] missing id column raises clear ValueError
+# Covers include/drop behavior, empty IDs, and missing-column errors.
 
 def test_include_first_true_returns_duplicate_groups(make_project):
     project = make_project(pd.DataFrame({"patient_card_no": ["123", "123"]}))
@@ -160,19 +125,11 @@ def test_missing_id_column_raises_value_error(make_project):
         project.resolve_dupes(id_cols="clear_which_column")    
 
 # ==========================================================
-# Function: merge_dfs (HIGH)
+# merge_dfs
 # ==========================================================
-# [X] empty csv list raises ValueError
-# [X] unknown columns dropped
-# [X] alias columns renamed to canonical names
-# [X] missing canonical columns become NaN via reindex (no KeyError)
-#
-# TODO: parametrize candidate
-# `test_unknown_columns_dropped`, `test_alias_columns_renames_to_canonical_names`,
-# and `test_missing_canonical_columns_become_nan_via_reindex` share the same Arrange pattern
-# (build input_df -> write csv via tmp_path -> call merge_dfs). Refactor with parametrize later.
+# Covers empty input, unknown-column dropping, alias renaming, and canonical
+# column reindexing behavior.
 
-# --- Write merge_dfs tests below ---
 def test_empty_csv_list_raises_value_error():
     with pytest.raises(ValueError, match=re.escape("❌ No CSV file/-s provided to merge_dfs")):
         YlivertainenDataCleaningSurg.merge_dfs([])    
@@ -193,8 +150,7 @@ def test_empty_csv_list_raises_value_error():
             "Kartuka": ["W-001", "W-002"],
             "Bloede pest": ["Catriona", "Nilfgaard plague"]}),
         lambda df: df["patient_card_no"].isna().all())
-    ], ids=["unknown_dropped", "alias_renamed", "missing_becomes_nan"]
-)
+    ], ids=["unknown_dropped", "alias_renamed", "missing_becomes_nan"])
 
 def test_merge_dfs_column_behaviour(tmp_path, input_df, check):
     csv_path = tmp_path / "witcher.csv"
@@ -203,17 +159,10 @@ def test_merge_dfs_column_behaviour(tmp_path, input_df, check):
     assert check(result_df)
 
 # ==========================================================
-# Planned sections (MEDIUM/LOW): TODO + code spaces
+# apply_schema
 # ==========================================================
+# Covers null replacement, numeric coercion, and invalid SCHEMA kinds.
 
-# ==========================================================
-# Function: apply_schema (MEDIUM)
-# ==========================================================
-# [X] configured null replacements are applied
-# [X] numeric conversion coerces invalid values to NaN
-# [X] invalid kind in SCHEMA raises ValueError
-
-# --- Code space: apply_schema tests ---
 def test_apply_schema_null_replacement_works(make_project, synthetic_df):
     project = make_project(synthetic_df)
     project = project.apply_schema()
@@ -229,14 +178,11 @@ def test_apply_schema_invalid_kind_value_error(make_project, synthetic_df, monke
         project.apply_schema()
 
 # ==========================================================
-# Function: apply_derived (MEDIUM)
+# apply_derived
 # ==========================================================
-# [X] match branch creates boolean agreement column
-# [X] datetime branch rejects unknown datetime unit
-# [X] timedelta branch requires datetime source columns
-# [X] negative timedeltas converted to NA
+# Covers match column creation, datetime coercion visibility, timedelta type
+# validation, and negative timedelta handling.
 
-# --- Code space: apply_derived tests ---
 def test_apply_derived_creates_boolean_match_column(make_project, synthetic_df):
     project = make_project(synthetic_df)
     project = project.apply_schema().apply_derived()
@@ -276,73 +222,118 @@ def test_negative_timedeltas_converted_to_na(make_project, synthetic_df, capsys)
     assert """also trashed NEGATIVE timedeltas: 1""" in out
 
 # ==========================================================
-# Function: cleanup (MEDIUM)
+# cleanup
 # ==========================================================
-# [X] drops columns where SCHEMA keep=False
+# Verifies dropping columns where SCHEMA `keep=False`.
 
-# --- Code space: cleanup tests ---
 def test_cleanup_drops_cols_where_keep_is_false(make_project, synthetic_df):
     project = make_project(synthetic_df)
     project = project.apply_schema().apply_derived().cleanup()
     assert 'izsaukuma_laiks' not in project.df.columns
 
-
 # ==========================================================
-# Function: apply_nan_features (MEDIUM)
+# apply_nan_features
 # ==========================================================
-# [ ] creates *_missing flags only for columns with NaNs
-# [ ] excludes derived columns from *_missing creation
+# Verifies `_missing` feature generation for SCHEMA columns with NaNs and
+# excludes DERIVED columns.
 
-# --- Code space: apply_nan_features tests ---
-def test_apply_nan_features_creates_only_for_cols_with_nans(make_project, synthetic_df):
+def test_apply_nan_features_behaviour(make_project, synthetic_df):
     project = make_project(synthetic_df)
-    expected_nan_cols = [f"{col}_missing" for col in project.df if project.df[col].isna().sum() > 0]
-    project = project.apply_nan_features()
-    nan_cols = [col for col in project.df if col.endswith("_missing")]
-    assert set(expected_nan_cols) == set(nan_cols)
-
-
-# ==========================================================
-# ==========================================================
-# Function: __str__ (LOW)
-# ==========================================================
-# [ ] returns string containing csv count and dataframe shape
-
-# --- Code space: __str__ tests ---
-
-
+    project = project.apply_schema()
+    project = project.apply_derived().apply_nan_features()
+    expected_nan_cols = [f"{ColSpec.name}_missing" for ColSpec in cleaning.SCHEMA if project.df[ColSpec.name].isna().sum() > 0]
+    real_nan_cols = [col for col in project.df if col.endswith("_missing")]
+    derived_cols = [ColSpec.name for ColSpec in cleaning.DERIVED if f"{ColSpec.name}_missing" in real_nan_cols]
+    assert set(expected_nan_cols) == set(real_nan_cols)         # creates only from columns with NaNs
+    assert len(derived_cols) == 0                                         # creates only from SCHEMA
 
 # ==========================================================
-# Function: pre_merge_check (LOW)
+# __str__
 # ==========================================================
-# [ ] smoke test with tiny temp CSVs (no crash)
+# Verifies string output includes CSV and shape details.
 
-# --- Code space: pre_merge_check tests ---
-
-
-
-# Function: ylivertainen_janitor (LOW)
-# ==========================================================
-# [ ] apply_all=False path works end-to-end
-# [ ] apply_all=True path works end-to-end
-
-# --- Code space: ylivertainen_janitor tests ---
-
-
+def test_string_when_constructing_ylivertainendatacleaningsurg(make_project, synthetic_df):
+    project = make_project(synthetic_df)
+    text = str(project)
+    assert """CSVs:""" in text
+    assert """rows, """ in text
+    assert """columns""" in text
 
 # ==========================================================
-# Function: explore_values (LOW)
+# pre_merge_check
 # ==========================================================
-# [ ] smoke test with mixed dtypes (no crash)
+# Smoke test to ensure pre-merge scan runs without crashing.
 
-# --- Code space: explore_values tests ---
-
-
+def test_pre_merge_check_smoke(tmp_path, monkeypatch):
+    test_table_location = root / "ylivertainen" / "example_table" / "testtable_synthetic.csv"
+    tmp_location = tmp_path / "ylivertainen" / "data" / "raw"
+    tmp_location.mkdir(parents=True, exist_ok=True)
+    shutil.copy(test_table_location, tmp_location)
+    monkeypatch.setattr(cleaning, "setup_repo_path", lambda: tmp_path)
+    csvs = pre_merge_check()
+    assert len(csvs) > 0
 
 # ==========================================================
-# Function: cleaning_overview_and_commit (LOW)
+# ylivertainen_janitor
 # ==========================================================
-# [ ] returns dataframe object
-# [ ] smoke test prints summary without crashing
+# End-to-end parity checks for both janitor execution modes.
 
-# --- Code space: cleaning_overview_and_commit tests ---
+def test_ylivertainen_janitor_smoke_apply_all_true(make_project, synthetic_df):
+    project_test = make_project(synthetic_df.copy(deep=True))
+    project_test = project_test.ylivertainen_janitor(
+        apply_all=True,
+        id_cols="patient_card_no",
+        include_first=False,
+        drop_dupes=False)
+    project_stepped = make_project(synthetic_df.copy(deep=True))
+    id_cols, include_first, drop_dupes = "patient_card_no", False, False
+    project_stepped = (project_stepped
+    .apply_schema()
+    .apply_derived()
+    .apply_nan_features()
+    .resolve_dupes(id_cols, include_first, drop_dupes)
+    .cleaning_overview_and_commit())
+    assert isinstance(project_test, pd.DataFrame)
+    assert isinstance(project_stepped, pd.DataFrame)
+    pd.testing.assert_frame_equal(project_test, project_stepped)
+
+def test_ylivertainen_janitor_smoke_apply_all_false(make_project, synthetic_df):
+    project_test = make_project(synthetic_df.copy(deep=True))
+    project_test = project_test.ylivertainen_janitor(
+        apply_all=False,
+        id_cols="patient_card_no",
+        include_first=False,
+        drop_dupes=False)
+    project_stepped = make_project(synthetic_df.copy(deep=True))
+    id_cols, include_first, drop_dupes = "patient_card_no", False, False
+    project_stepped = (project_stepped
+    .resolve_dupes(id_cols, include_first, drop_dupes)
+    .cleaning_overview_and_commit())
+    assert isinstance(project_test, pd.DataFrame)
+    assert isinstance(project_stepped, pd.DataFrame)
+    pd.testing.assert_frame_equal(project_test, project_stepped)
+
+# ==========================================================
+# explore_values
+# ==========================================================
+# Smoke test with mixed dtypes.
+
+def test_explore_values_w_mixed_dtypes(make_project, synthetic_df):
+    project = make_project(synthetic_df.copy(deep=True))
+    project.explore_values()
+
+# ==========================================================
+# cleaning_overview_and_commit
+# ==========================================================
+# Verifies return type and summary output markers.
+
+def test_cleaning_overview_and_commit_smoke(make_project, synthetic_df, capsys):
+    project = make_project(synthetic_df.copy(deep=True))
+    returns_df = project.cleaning_overview_and_commit()
+    out = capsys.readouterr().out
+    out = re.sub(r"\x1b\[[0-9;]*m", "", out)
+    assert isinstance(returns_df, pd.DataFrame)
+    assert """🧠 DATA CLEANING COMPLETE — FRAME STABLE""" in out
+    assert """✔ CLEANED DF ONLINE""" in out
+    assert """→ Next: pass""" in out
+
