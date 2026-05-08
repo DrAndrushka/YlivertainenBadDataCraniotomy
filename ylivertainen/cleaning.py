@@ -3,18 +3,27 @@
 #==================================
 import pandas as pd
 import numpy as np
+import streamlit as st
 from pathlib import Path
 from ylivertainen._pathing import setup_repo_path
 from IPython.display import display, Markdown
 
 from ylivertainen.schema import COLUMN_RENAME_MAP, SCHEMA, DERIVED
-
-#============ ANSI Escape Codes for formating ============
-from ylivertainen.aesthetics_helpers import GREEN, YELLOW, ORANGE, RED, BOLD, BLUE, GRAY, RESET
-
 #==================================================
 #            Pre merge column name check
 #==================================================
+def _csv_column_names_pretty(text) -> None:
+    text_align = "text-align:" + "center"
+    color = "color:" + "white"
+    font_weight = "font-weight:" + "700"
+    font_size = "font-size:" + "25px"
+
+    st.markdown(
+        f"<div style='{text_align}; {color}; {font_weight}; {font_size};'>{text}</div>",
+        unsafe_allow_html=True
+        )
+
+
 def pre_merge_check(
     colname_length: int = 15,
     show_dfs: bool = False,
@@ -36,17 +45,13 @@ def pre_merge_check(
         df.columns = df.columns.astype(str).str.strip().str[:colname_length]
 
         if i == 0:
-            print(f"{BOLD}{BLUE}=" * 70)
-            print(csv_name)
-            print("=" * 70, RESET)
+            _csv_column_names_pretty(f"{'=' * 25} {str(csv_name)} {'=' * 25}")
             # Save the first file's columns as the reference
-            print(f"{'\n'.join([f"`{col}`" for col in cols])}")
+            st.write(f"{'\n'.join([f"`{col}`" for col in cols])}")
             base_cols = cols
-            print(f"{BOLD}===== ✅ Using this file as column name reference ✅ ====={RESET}")
+            st.success(f" ✅ Using this file as column name reference ✅ ")
         else:
-            print('\n' + f"{BOLD}{BLUE}=" * 70)
-            print(csv_name)
-            print("=" * 70, RESET)
+            _csv_column_names_pretty(f"{'=' * 25} {str(csv_name)} {'=' * 25}")
             base_set = set(base_cols)
             curr_set = set(cols)
 
@@ -54,18 +59,16 @@ def pre_merge_check(
             extra   = curr_set - base_set      # in current, not in first
 
             if missing or extra:
-                print(" ❌ Schema difference vs FIRST file:")
+                st.warning(" ❌ Schema difference vs FIRST file:")
                 if missing:
-                    print(f'{ORANGE}{BOLD}=== Missing (in first, not here) ==={RESET}')
-                    print(f"'{f"'\n'".join(missing)}'")
+                    st.warning(f"=== Missing (in first, not here) ===\n\n'{f"'\n\n'".join(missing)}'")
                 if extra:
-                    print(f'{ORANGE}{BOLD}=== Extra (here, not in first) ==={RESET}')
-                    print(f"'{f"'\n'".join(extra)}'")
+                    st.warning(f"=== Extra (here, not in first) ===\n\n'{f"'\n\n'".join(extra)}'")
             else:
-                print(" ✅ Same set of column names as FIRST file")
+                st.success(" ✅ Same set of column names as FIRST file")
 
         if show_dfs:
-            display(df.head(2))
+            st.dataframe(df.head(2))
 
     return csvs
 
@@ -209,7 +212,7 @@ class YlivertainenDataCleaningSurg:
         #              INITIAL COLUMN CHECK
         #=================================================
         print("═" * 70)
-        print(f"{BOLD}🧱 SCHEMA / COLUMN CHECK{RESET}")
+        print(f"🧱 SCHEMA / COLUMN CHECK")
         print("─" * 70)
 
         CRM_columns = [col for col in COLUMN_RENAME_MAP]
@@ -221,16 +224,16 @@ class YlivertainenDataCleaningSurg:
             raise ValueError(f'❌ SCHEMA columns differ from COLUMN_RENAME_MAP: {mismatched_cols}')
 
         for ColSpec in SCHEMA:  
-            print(f'{BLUE}{BOLD}{ColSpec.name}{RESET} successfully found in columns')  
+            print(f'{ColSpec.name} successfully found in columns')  
         
         # ===== feedback =====
-        print(f"{GREEN}{BOLD}✔ SCHEMA OK:{RESET} COLUMN_RENAME_MAP matches SCHEMA\n")
+        print(f"✔ SCHEMA OK: COLUMN_RENAME_MAP matches SCHEMA\n")
 
         #=================================================
         #           REPLACE w/ NaNs in SCHEMA
         #=================================================
         print("═" * 70)
-        print(f"{BOLD}💧 MISSING VALUES / NaNs{RESET}")
+        print(f"💧 MISSING VALUES / NaNs")
         print("─" * 70)
         
         NaN_replaced_cols = []
@@ -241,7 +244,7 @@ class YlivertainenDataCleaningSurg:
                     before_NaNs = self.df[ColSpec.name].isna().sum()
                     self.df[ColSpec.name] = self.df[ColSpec.name].replace(null, np.nan)
                     after_NaNs = self.df[ColSpec.name].isna().sum()
-                    print(f'{null} ⇒ NaN @ {BLUE}{BOLD}{ColSpec.name}{RESET} | Values that became NaN: {after_NaNs - before_NaNs}')
+                    print(f'{null} ⇒ NaN @ {ColSpec.name} | Values that became NaN: {after_NaNs - before_NaNs}')
             elif ColSpec.ordered:
                 vals_to_allow = [val for val in ColSpec.ordered]
                 null_vals = [val for val in self.df[ColSpec.name].unique() if val not in vals_to_allow]
@@ -252,37 +255,37 @@ class YlivertainenDataCleaningSurg:
                         before_NaNs = self.df[ColSpec.name].isna().sum()
                         self.df[ColSpec.name] = self.df[ColSpec.name].replace(null, np.nan)
                         after_NaNs = self.df[ColSpec.name].isna().sum()
-                        print(f'{null} ⇒ NaN @ {BLUE}{BOLD}{ColSpec.name}{RESET} | Values that became NaN: {after_NaNs - before_NaNs}')
+                        print(f'{null} ⇒ NaN @ {ColSpec.name} | Values that became NaN: {after_NaNs - before_NaNs}')
         # ===== give positive feedback for all columns found =====
         if len(NaN_replaced_cols) > 0:
-            print(f"{GREEN}{BOLD}✔ NaN pass:{RESET}\n"
+            print(f"✔ NaN pass:\n"
             f"replaced values in {NaN_replaced_cols} columns\n")
         else:
-            print(f"{GREEN}{BOLD}✔ NaN pass:{RESET} nothing to replace\n")
+            print(f"✔ NaN pass: nothing to replace\n")
 
         #=================================================
         #            REPLACE values in SCHEMA
         #=================================================
         print("═" * 70)
-        print(f"{BOLD}🐾 REPLACE VALUES {RESET}")
+        print(f"🐾 REPLACE VALUES ")
         print("─" * 70)
 
         for ColSpec in SCHEMA:
             if isinstance(ColSpec.replace, dict):
                 for old, new in ColSpec.replace.items():
                     self.df[ColSpec.name] = self.df[ColSpec.name].replace(old, new)
-                    print(f'"{old}" ⇒ "{new}" @ {BLUE}{BOLD}{ColSpec.name}{RESET}')
-        print(f'{GREEN}{BOLD}✔ Replaced:{RESET} All target values replaced {RESET}\n')
+                    print(f'"{old}" ⇒ "{new}" @ {ColSpec.name}')
+        print(f'✔ Replaced: All target values replaced \n')
 
         #=================================================
         #            Change DTYPES in SCHEMA
         #=================================================
         print("═" * 70)
-        print(f"{BOLD}🧬 DTYPE CONVERSION{RESET}")
+        print(f"🧬 DTYPE CONVERSION")
         print("─" * 70)
         
         for ColSpec in SCHEMA:
-            col_name = f'{BLUE}{BOLD}{ColSpec.name}{RESET}'
+            col_name = f'{ColSpec.name}'
             if ColSpec.kind == 'numeric':
                 col_before = self.df[ColSpec.name].copy()
                 before_NaNs = col_before.isna().sum()
@@ -325,7 +328,7 @@ class YlivertainenDataCleaningSurg:
             else:
                 raise ValueError(f'❌ No such dtype: {ColSpec.kind}')
         # ===== feedback =====
-        print(f"{GREEN}{BOLD}✔ Done:{RESET} all columns converted to target dtypes\n")
+        print(f"✔ Done: all columns converted to target dtypes\n")
         return self
 
     #==============================================================
@@ -333,7 +336,7 @@ class YlivertainenDataCleaningSurg:
     #==============================================================
     def apply_derived(self) -> "YlivertainenDataCleaningSurg":
         print("═" * 70)
-        print(f"{BOLD}🍼 CREATION OF DERIVED {RESET}")
+        print(f"🍼 CREATION OF DERIVED ")
         print("─" * 70)
 
         df = self.df.copy()
@@ -376,10 +379,10 @@ class YlivertainenDataCleaningSurg:
                 match_rate = 0.0 if n_evaluable == 0 else round(float(agreement.loc[evaluable].mean()) * 100, 2)
 
                 print(
-                    f"🎯 {BOLD}{col_name}{RESET}: {GREEN}{BOLD}{match_rate}%{RESET}\n"
-                    f"of cases labeled as {BOLD}{normalized_criteria}{RESET} in {BLUE}{BOLD}{left_col}{RESET}\n"
-                    f"were also classified in the same family in {BLUE}{BOLD}{right_col}{RESET}\n"
-                    f"n = {BOLD}{n_evaluable}{RESET} evaluable cases\n"
+                    f"🎯 {col_name}: {match_rate}%\n"
+                    f"of cases labeled as {normalized_criteria} in {left_col}\n"
+                    f"were also classified in the same family in {right_col}\n"
+                    f"n = {n_evaluable} evaluable cases\n"
                 )
                 # return updated df
                 self.df = df
@@ -428,7 +431,7 @@ class YlivertainenDataCleaningSurg:
                 extractor = datetime_extractors[unit]
                 df[target_col] = extractor(df[source_col])
 
-                print(f'📅 Created {BLUE}{BOLD}{ColSpec.name}{RESET} derived from  "{source_col}"')
+                print(f'📅 Created {ColSpec.name} derived from  "{source_col}"')
                 if ColSpec.name in df.select_dtypes(include="number"):
                     bad_mask = df[ColSpec.name] < 0
                     df.loc[bad_mask, ColSpec.name] = pd.NA
@@ -439,25 +442,25 @@ class YlivertainenDataCleaningSurg:
                     min_val = df[ColSpec.name].min()
                     mean_val = round(df[ColSpec.name].mean(), 3)
                     std_val = round(df[ColSpec.name].std(), 3)
-                    print(f'{BOLD}MAX:{RESET} {max_val}')
+                    print(f'MAX: {max_val}')
                     if bad_count > 0:
-                        print(f'{BOLD}MIN:{RESET} {min_val} ==> also trashed NEGATIVE datetimes: {bad_count}')
+                        print(f'MIN: {min_val} ==> also trashed NEGATIVE datetimes: {bad_count}')
                     else:
-                        print(f'{BOLD}MIN:{RESET} {min_val} ==> no negative timedeltas found')
+                        print(f'MIN: {min_val} ==> no negative timedeltas found')
 
-                    print(f'{BOLD}Mean:{RESET} {mean_val}')
-                    print(f'{BOLD}STD:{RESET} {std_val}\n')
+                    print(f'Mean: {mean_val}')
+                    print(f'STD: {std_val}\n')
                 else:
                     unique_count = df[ColSpec.name].nunique()
                     commonest = df[ColSpec.name].value_counts().head(5).to_dict()
                     rarest = df[ColSpec.name].value_counts().tail(5).to_dict()
                     nan_count = df[ColSpec.name].isna().sum()
-                    print(f'{BOLD}Unique count:{RESET} {unique_count}')
+                    print(f'Unique count: {unique_count}')
                     if unique_count > 5:
-                        print(f'{BOLD}Unique first:{RESET} {commonest}')
-                        print(f'{BOLD}Unique last:{RESET} {rarest}\n')
+                        print(f'Unique first: {commonest}')
+                        print(f'Unique last: {rarest}\n')
                     else:
-                        print(f'{BOLD}Uniques:{RESET} {commonest}\n')
+                        print(f'Uniques: {commonest}\n')
         
             #============================
             #          TIMEDELTA
@@ -504,7 +507,7 @@ class YlivertainenDataCleaningSurg:
                 df[ColSpec.name] = df[ColSpec.name].astype("Int64")
                 #============================
 
-                print(f'⌛ Created {BLUE}{BOLD}{ColSpec.name}{RESET} derived from the difference between "{end_col}" and "{start_col}"')
+                print(f'⌛ Created {ColSpec.name} derived from the difference between "{end_col}" and "{start_col}"')
                 bad_mask = df[ColSpec.name] < 0
                 df.loc[bad_mask, ColSpec.name] = pd.NA
                 bad_count = bad_mask.sum()
@@ -513,17 +516,17 @@ class YlivertainenDataCleaningSurg:
                 min_val = df[ColSpec.name].min()
                 mean_val = round(df[ColSpec.name].mean(), 3)
                 std_val = round(df[ColSpec.name].std(), 3)
-                print(f'{BOLD}MAX:{RESET} {max_val}')
+                print(f'MAX: {max_val}')
                 if bad_count > 0:
-                    print(f'{BOLD}MIN:{RESET} {min_val} ==> also trashed NEGATIVE timedeltas: {bad_count}')
+                    print(f'MIN: {min_val} ==> also trashed NEGATIVE timedeltas: {bad_count}')
                 else:
-                    print(f'{BOLD}MIN:{RESET} {min_val} ==> no negative timedeltas found')
-                print(f'{BOLD}Mean:{RESET} {mean_val}')
-                print(f'{BOLD}STD:{RESET} {std_val}\n')
+                    print(f'MIN: {min_val} ==> no negative timedeltas found')
+                print(f'Mean: {mean_val}')
+                print(f'STD: {std_val}\n')
 
 
         # ===== feedback =====
-        print(f"{GREEN}{BOLD}✔ Derived:{RESET} creation process completed")
+        print(f"✔ Derived: creation process completed")
         return self
     
     #==============================================================
@@ -531,18 +534,18 @@ class YlivertainenDataCleaningSurg:
     #==============================================================
     def cleanup(self) -> "YlivertainenDataCleaningSurg":
         print("═" * 70)
-        print(f"{BOLD}🧹 CLEAN UP {RESET}")
+        print(f"🧹 CLEAN UP ")
         print("─" * 70)
         
         dropped_columns = []
         for ColSpec in SCHEMA:
-            col_name = f'{BLUE}{BOLD}{ColSpec.name}{RESET}'
+            col_name = f'{ColSpec.name}'
             if not ColSpec.keep:
                 dropped_columns.append(ColSpec.name)
                 print(f'🪓 Successfully amputated {col_name}')
         self.df = self.df.drop(columns=dropped_columns)
         # ===== feedback  =====
-        print(f"{GREEN}{BOLD}✔ Cleaned up:{RESET} {len(dropped_columns)} unnecessary columns dropped")
+        print(f"✔ Cleaned up: {len(dropped_columns)} unnecessary columns dropped")
         return self
     
     #==============================================================
@@ -550,7 +553,7 @@ class YlivertainenDataCleaningSurg:
     #==============================================================
     def apply_nan_features(self) -> "YlivertainenDataCleaningSurg":
         print("═" * 70)
-        print(f"{BOLD} ⭕ NaN features Flags {RESET}")
+        print(f" ⭕ NaN features Flags ")
         print("─" * 70)
 
         df = self.df.copy()
@@ -563,17 +566,17 @@ class YlivertainenDataCleaningSurg:
             
             if null_sum > 0:
                 df[f'{col}_missing'] = df[col].isna()
-                print(f'{BLUE}{BOLD}{col}{RESET} has {RED}{BOLD}{null_sum} NaNs{RESET}. Created feature flag column')
+                print(f'{col} has {null_sum} NaNs. Created feature flag column')
 
             else:
-                print(f'{GRAY}✅ No NaNs found in{RESET} {col}')
+                print(f'✅ No NaNs found in {col}')
 
         # ===== feedback =====
         total_nans = df.isna().sum().sum()
         if total_nans > 0:
-            print(f"{GREEN}{BOLD}✔ NaN feature cols:{RESET} created NaN feature columns")
+            print(f"✔ NaN feature cols: created NaN feature columns")
         else:
-            print(f"{GREEN}{BOLD}✔ NaN feature cols:{RESET} {total_nans} NaNs found in the whole dataset")
+            print(f"✔ NaN feature cols: {total_nans} NaNs found in the whole dataset")
         self.df = df
         return self
     
@@ -618,13 +621,13 @@ class YlivertainenDataCleaningSurg:
 
     def resolve_dupes(self, id_cols, include_first: bool = True, drop: bool = False) -> "YlivertainenDataCleaningSurg":
         print("═" * 70)
-        print(f"{BOLD}🔍 DUPE SEARCH {RESET}")
+        print(f"🔍 DUPE SEARCH ")
         print("─" * 70)
 
         id_cols, skipsfirst_dupe_mask, includesfirst_dupe_mask = self._resolve_duplicate_masks(id_cols)
 
         if len(id_cols) == 0:
-            print(f'{BOLD}There are no ID columns{RESET}')
+            print(f'There are no ID columns')
             display(self.df.iloc[0:0])
             return self
 
@@ -632,7 +635,7 @@ class YlivertainenDataCleaningSurg:
         dupe_count = int(dup_mask.sum())
 
         if dupe_count > 0:
-            print(f"{GREEN}{BOLD}✔ Dupe search:{RESET}")
+            print(f"✔ Dupe search:")
             if include_first:
                 print(f'There are {dupe_count} rows in duplicate groups based on complete normalized ID: {id_cols}')
                 print('Note: includes the first row in each duplicate group. Rows with incomplete IDs were ignored')
@@ -641,25 +644,25 @@ class YlivertainenDataCleaningSurg:
                 print('Note: not including the first. Rows with incomplete IDs were ignored')
         else:
             print(f'✅ No duplicates found based on complete normalized ID: {id_cols}')
-            print(f"{GREEN}{BOLD}✔ Dupe search:{RESET} no duplicates found based on complete normalized ID: {id_cols}")
+            print(f"✔ Dupe search: no duplicates found based on complete normalized ID: {id_cols}")
 
         dupe_df = self.df.loc[dup_mask]
         display(dupe_df)
 
         if drop:
             print("═" * 70)
-            print(f"{BOLD}🪚 DUPE REMOVAL {RESET}")
+            print(f"🪚 DUPE REMOVAL ")
             print("─" * 70)
 
             id_cols, skipsfirst_dupe_mask, _ = self._resolve_duplicate_masks(id_cols)
 
             if len(id_cols) == 0:
-                print(f"{GREEN}{BOLD}✔ Dupe removal:{RESET} no ID columns provided — skipping duplicate removal")
+                print(f"✔ Dupe removal: no ID columns provided — skipping duplicate removal")
                 return self
 
             dupe_count = int(skipsfirst_dupe_mask.sum())
 
-            print(f"{GREEN}{BOLD}✔ Dupe removal:{RESET} removed {dupe_count} later duplicates based on complete normalized ID: {id_cols}")
+            print(f"✔ Dupe removal: removed {dupe_count} later duplicates based on complete normalized ID: {id_cols}")
 
             self.df = self.df[~skipsfirst_dupe_mask].reset_index(drop=True)
             return self
@@ -701,7 +704,7 @@ class YlivertainenDataCleaningSurg:
 
         for col in analyse_those:
 
-            print(f'{BLUE}{BOLD}===== {col} ====={RESET}')
+            print(f'===== {col} =====')
             
             if col in categorical_cols or col in bool_cols:
 
@@ -711,17 +714,17 @@ class YlivertainenDataCleaningSurg:
                 rarest = self.df[col].value_counts().tail(5).to_dict()
                 nan_count = self.df[col].isna().sum()
 
-                print(f'{BOLD}Dtype:{RESET} {dt}')
-                print(f'{BOLD}Unique count:{RESET} {unique_count}')
+                print(f'Dtype: {dt}')
+                print(f'Unique count: {unique_count}')
                 if unique_count > 5:
-                    print(f'{BOLD}Unique first:{RESET} {commonest}')
-                    print(f'{BOLD}Unique last:{RESET} {rarest}')
+                    print(f'Unique first: {commonest}')
+                    print(f'Unique last: {rarest}')
                 else:
-                    print(f'{BOLD}Uniques:{RESET} {commonest}')
+                    print(f'Uniques: {commonest}')
                 if nan_count > 0:
-                    print(f'{BOLD}NaN count:{RESET} {RED}{nan_count}{RESET}')
+                    print(f'NaN count: {nan_count}')
                 else:
-                    print(f'{BOLD}NaN count:{RESET} {GREEN}{nan_count}{RESET}')
+                    print(f'NaN count: {nan_count}')
 
             if col in numerical_cols:
                 
@@ -732,35 +735,35 @@ class YlivertainenDataCleaningSurg:
                 std_val = round(self.df[col].std(), 3)
                 nan_count = self.df[col].isna().sum()
 
-                print(f'{BOLD}Dtype:{RESET} {dt}')
-                print(f'{BOLD}MAX:{RESET} {max_val}')
+                print(f'Dtype: {dt}')
+                print(f'MAX: {max_val}')
                 if 'timedelta' in col:
                     if min_val < 0:
-                        print(f'{BOLD}MIN:{RESET} {RED}{min_val}{RESET}')
+                        print(f'MIN: {min_val}')
                 else:
-                    print(f'{BOLD}MIN:{RESET} {min_val}')
-                print(f'{BOLD}Mean:{RESET} {mean_val}')
-                print(f'{BOLD}STD:{RESET} {std_val}')
+                    print(f'MIN: {min_val}')
+                print(f'Mean: {mean_val}')
+                print(f'STD: {std_val}')
                 if nan_count > 0:
-                    print(f'{BOLD}NaN count:{RESET} {RED}{nan_count}{RESET}')
+                    print(f'NaN count: {nan_count}')
                 else:
-                    print(f'{BOLD}NaN count:{RESET} {GREEN}{nan_count}{RESET}')
+                    print(f'NaN count: {nan_count}')
 
         for col in self.df.columns:
             if col not in analyse_those:
-                print(f'{BLUE}{BOLD}===== {col} ====={RESET}')
-                print(f'{BOLD}Dtype:{RESET} {self.df[col].dtype}')
-                print(f'{BOLD}NaN count:{RESET} {self.df[col].isna().sum()}')
-                print(f'{BOLD}Unique count:{RESET} {self.df[col].nunique()}')
-                print(f'{BOLD}Commonest:{RESET} {self.df[col].value_counts().head(5).to_dict()}')
-                print(f'{BOLD}Rarest:{RESET} {self.df[col].value_counts().tail(5).to_dict()}')
+                print(f'===== {col} =====')
+                print(f'Dtype: {self.df[col].dtype}')
+                print(f'NaN count: {self.df[col].isna().sum()}')
+                print(f'Unique count: {self.df[col].nunique()}')
+                print(f'Commonest: {self.df[col].value_counts().head(5).to_dict()}')
+                print(f'Rarest: {self.df[col].value_counts().tail(5).to_dict()}')
 
     #==============================================================
     #                      COMMIT CLEANED DF 
     #==============================================================
     def cleaning_overview_and_commit(self):
         print("═" * 70)
-        print(f"{BOLD}🧠 DATA CLEANING COMPLETE — FRAME STABLE{RESET}")
+        print(f"🧠 DATA CLEANING COMPLETE — FRAME STABLE")
         print("─" * 70)
 
         cleaned_df = self.df
@@ -769,11 +772,11 @@ class YlivertainenDataCleaningSurg:
         total_nans = cleaned_df.isna().sum().sum()
         nan_pct = (total_nans / (n_rows * n_cols)) * 100 if n_rows and n_cols else 0
 
-        print(f"{GREEN}✔ CLEANED DF ONLINE{RESET}")
+        print(f"✔ CLEANED DF ONLINE")
         print(f"   Shape         : {n_rows} rows x {n_cols} cols")
         print(f"   Remaining NaNs: {total_nans} cells ({nan_pct:0.2f}%)")
         print("   Status        : noise resected, dtypes aligned, ready for cohort craniotomy 🧠🪓")
-        print(f"\n{BOLD}{GREEN}→ Next: pass this straight into cohort — no extra rituals needed.{RESET}")
+        print(f"\n→ Next: pass this straight into cohort — no extra rituals needed.")
 
         display(cleaned_df.head())
         return cleaned_df
