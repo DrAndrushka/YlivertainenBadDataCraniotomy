@@ -203,7 +203,7 @@ class YlivertainenDataCleaningSurg:
     #==============================================================
     #                   SCHEMA FUNCTION DEFINITION 
     #==============================================================
-    def apply_schema(self) -> "YlivertainenDataCleaningSurg":
+    def apply_schema(self, COLUMN_RENAME_MAP) -> "YlivertainenDataCleaningSurg":
         
         self.df.columns = [col.strip() for col in self.df.columns]
 
