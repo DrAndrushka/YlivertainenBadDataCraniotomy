@@ -8,27 +8,26 @@ from pathlib import Path
 from ylivertainen._pathing import setup_repo_path
 from IPython.display import display, Markdown
 
-from ylivertainen.schema import COLUMN_RENAME_MAP, SCHEMA, DERIVED
+from ylivertainen.schema import SCHEMA, DERIVED
 #==================================================
 #            Pre merge column name check
 #==================================================
-def _csv_column_names_pretty(text) -> None:
-    text_align = "text-align:" + "center"
-    color = "color:" + "white"
-    font_weight = "font-weight:" + "700"
-    font_size = "font-size:" + "25px"
-
-    st.markdown(
-        f"<div style='{text_align}; {color}; {font_weight}; {font_size};'>{text}</div>",
-        unsafe_allow_html=True
-        )
-
-
 def pre_merge_check(
     colname_length: int = 15,
     show_dfs: bool = False,
     ) -> None:
     
+    def _csv_column_names_pretty(text) -> None:
+        text_align = "text-align:" + "center"
+        color = "color:" + "white"
+        font_weight = "font-weight:" + "700"
+        font_size = "font-size:" + "25px"
+
+        st.markdown(
+            f"<div style='{text_align}; {color}; {font_weight}; {font_size};'>{text}</div>",
+            unsafe_allow_html=True
+            )
+
     root = setup_repo_path()
     raw_dir = root / "ylivertainen" / "data" / "raw"
     csvs = sorted(raw_dir.glob("*.csv"))    # <== takes all CSVs from ylivertainen/data/raw
@@ -81,7 +80,7 @@ class YlivertainenDataCleaningSurg:
     #                   MERGE CSVs 
     #================================================
     @staticmethod
-    def merge_dfs(csvs) -> pd.DataFrame:
+    def merge_dfs(csvs, COLUMN_RENAME_MAP) -> pd.DataFrame:
         
         if not csvs:
             raise ValueError("❌ No CSV file/-s provided to merge_dfs")
@@ -188,9 +187,9 @@ class YlivertainenDataCleaningSurg:
         return super_df
     
     #============ Ship's Log: Registering the Loot ============
-    def __init__(self, csvs: list) -> None:
+    def __init__(self, csvs: list, COLUMN_RENAME_MAP: dict) -> None:
         self.csvs = csvs
-        self.df = self.merge_dfs(csvs)
+        self.df = self.merge_dfs(csvs, COLUMN_RENAME_MAP)
     
     def __str__(self) -> str:
         csv_count = len(self.csvs)
