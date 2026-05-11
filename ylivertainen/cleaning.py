@@ -85,104 +85,11 @@ class YlivertainenDataCleaningSurg:
         if not csvs:
             raise ValueError("❌ No CSV file/-s provided to merge_dfs")
         
-        df_list = []
-        dropped_cols = {}
-        renamed_cols = {}
+        #TODO: has to take CSVS and rename them based on COLUMN_RENAME_MAP
 
-        for csv in csvs:
-            
-            naive_df = pd.read_csv(csv)
-            naive_df.columns = naive_df.columns.str.strip()
-            confident_cols = []
-            
-            for col in naive_df.columns:
-                # ===== find if it's in canonical =====
-                if col in COLUMN_RENAME_MAP:
-                    if col not in confident_cols:
-                        confident_cols.append(col)
-                    continue
+        #TODO: shouldnt take SEQUENCE (it will change project.df later)
 
-                # ===== if not then look in alias =====
-                found = False
-                for canonical, aliases in COLUMN_RENAME_MAP.items():
-                    if col in aliases:
-                        naive_df = naive_df.rename(columns={col: canonical})
-                        renamed_cols.setdefault(csv, {}).setdefault(canonical, []).append(col)
-                        if canonical not in confident_cols:
-                            confident_cols.append(canonical)
-                        found = True
-                        break
-
-                # ===== drop if in neither =====
-                if not found:
-                    dropped_cols.setdefault(csv, []).append(col)
-            
-            confident_df = naive_df[confident_cols]
-            df_list.append(confident_df)
-        
-        super_df = pd.concat(df_list, ignore_index=True)        # <---- works for 1 or many CSVs
-
-        sequenced_list = list(COLUMN_RENAME_MAP)
-        # If a canonical column never appears in any input CSV, keep it as NaN
-        # instead of crashing with a KeyError.
-        super_df = super_df.reindex(columns=sequenced_list)
-
-        def compact_columns_text(cols: list[str], per_line: int = 6) -> str:
-            chunks = [cols[i:i + per_line] for i in range(0, len(cols), per_line)]
-            return "\n".join(", ".join(f"`{c}`" for c in chunk) for chunk in chunks)
-
-        total_rows, total_cols = super_df.shape
-        display(
-            Markdown(
-                "\n".join(
-                    [
-                        "## 🧩 MERGE SUMMARY",
-                        "---",
-                        f"**Rows:** `{total_rows}`  |  **Columns:** `{total_cols}`",
-                        "",
-                        "## 🧱 CANONICAL COLUMNS",
-                        compact_columns_text(list(super_df.columns), per_line=6),
-                    ]
-                )
-            )
-        )
-
-        removed_section_lines: list[str] = ["---", "## 🗑️ REMOVED COLUMNS", ""]
-        if dropped_cols:
-            for csv_key in sorted(dropped_cols.keys(), key=lambda p: Path(str(p)).name):
-                csv_name = Path(str(csv_key)).name
-                dropped = sorted(dropped_cols[csv_key])
-                removed_section_lines.append(f"**{csv_name}** ({len(dropped)})\n")
-                removed_section_lines.append(", ".join(f"`{c}`" for c in dropped))
-                removed_section_lines.append("")
-        else:
-            removed_section_lines.append("_none_")
-        display(Markdown("\n".join(removed_section_lines)))
-
-        canonical_view: dict[str, list[tuple[object, str]]] = {}
-        for csv, mapping in renamed_cols.items():
-            for canonical, old_names in mapping.items():
-                for old_name in old_names:
-                    canonical_view.setdefault(canonical, []).append((csv, old_name))
-
-        renamed_section_lines: list[str] = ["---", "## 🔁 RENAMED COLUMNS", ""]
-        if canonical_view:
-            for canonical in sorted(canonical_view.keys()):
-                renamed_section_lines.append(
-                    f"<span style='color:#4da3ff; font-weight:700;'>===== {canonical} =====</span>"
-                    )
-                entries = sorted(
-                    canonical_view[canonical],
-                    key=lambda t: (Path(str(t[0])).name, str(t[1])),
-                )
-                for csv_key, old_name in entries:
-                    table_name = Path(str(csv_key)).name
-                    renamed_section_lines.append(f"\n{old_name} 🪄 {table_name}")
-                renamed_section_lines.append("")
-        else:
-            renamed_section_lines.append("_none_")
-        display(Markdown("\n".join(renamed_section_lines)))
-        display(Markdown("---" * 70))
+        #TODO: duplicate column name means it will be merged
 
         return super_df
     

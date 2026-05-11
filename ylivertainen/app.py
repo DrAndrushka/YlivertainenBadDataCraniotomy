@@ -40,6 +40,15 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 
+def pretty_text(text, align, color, weight, size) -> None:
+    text_align = "text-align:" + align
+    colorrr = "color:" + color
+    font_weight = "font-weight:" + weight
+    font_size = "font-size:" + size
+
+    st.markdown(
+        f"<div style='{text_align}; {colorrr}; {font_weight}; {font_size};'>{text}</div>",
+        unsafe_allow_html=True)
 #=============================
 # Little Text Just Because...
 #=============================
@@ -65,21 +74,24 @@ st.header("🧹 DATA CLEANING 🧹")
 #    csvs = pre_merge_check(colname_length=25,show_dfs=show_dfs)
 
 
-#==============================
-#    Ultimate Column Renamer
-#==============================
+#=====================================
+#       Ultimate Column Renamer
+#=====================================
+RENAME_FINISHED = False
+
+COLUMN_RENAME_MAP = {}
+
+raw_dir = root / "ylivertainen" / "data" / "raw"
+csvs = sorted(raw_dir.glob("*.csv"))
+
+RAW_COLUMNS = list(dict.fromkeys([col.strip() for csv in csvs for col in pd.read_csv(csv, nrows=0).columns]))
+
+dfs_list = [pd.read_csv(csv, nrows=3).reindex(columns=RAW_COLUMNS) for csv in csvs]
+PREVIEW_DF = pd.concat(dfs_list, ignore_index=True)
+
+col1,col2,col3,col4 = st.columns([1,0.25,1,1.5])
 
 #====== HELPERS ======
-def pretty_text(text, align, color, weight, size) -> None:
-    text_align = "text-align:" + align
-    colorrr = "color:" + color
-    font_weight = "font-weight:" + weight
-    font_size = "font-size:" + size
-
-    st.markdown(
-        f"<div style='{text_align}; {colorrr}; {font_weight}; {font_size};'>{text}</div>",
-        unsafe_allow_html=True)
-
 def submit_rename():
     new_col_name = st.session_state.rename_input.strip()
     if new_col_name:
@@ -87,19 +99,11 @@ def submit_rename():
         st.session_state.current_idx += 1
         st.session_state.rename_input = ""
 
-def submit_rearrange():
-    new_col_sequence = st.session_state.rearrange_input.strip()
-    if new_col_sequence:
-        st.session_state.rearrange_idx += 1
-        st.session_state.rearrange_input = ""
-
-#===========
-raw_dir = root / "ylivertainen" / "data" / "raw"
-csvs = sorted(raw_dir.glob("*.csv"))
-RAW_COLUMNS = list(dict.fromkeys([col.strip() for csv in csvs for col in pd.read_csv(csv, nrows=0).columns]))
-dfs_list = [pd.read_csv(csv, nrows=3).reindex(columns=RAW_COLUMNS) for csv in csvs]
-PREVIEW_DF = pd.concat(dfs_list, ignore_index=True)
-
+def undo_rename():
+    if st.session_state.rename_log and st.session_state.current_idx > 0:
+        st.session_state.rename_log.pop(0)
+        st.session_state.current_idx -= 1
+        st.session_state.rename_input = ""
 
 # ===== SESSION STATE INIT =====
 if "rename_log" not in st.session_state:
@@ -108,21 +112,17 @@ if "rename_input" not in st.session_state:
     st.session_state.rename_input = ""
 if "current_idx" not in st.session_state:
     st.session_state.current_idx = 0
-if "rearrange_idx" not in st.session_state:
-    st.session_state.rearrange_idx = 0
-if "rearrange_input" not in st.session_state:
-    st.session_state.rearrange_input = ""
-if "REARRANGED_DF" not in st.session_state:
-    st.session_state.REARRANGED_DF = pd.DataFrame()
-# ===== OUTPUT =====
-COLUMN_RENAME_MAP = {}
 
-
-col1,col2,col3,col4 = st.columns([1,0.1,1,1.5])
-
+# ===== FUNCTION ======
 if st.session_state.current_idx < len(RAW_COLUMNS):
     with col1:
-        new_col_name = st.text_input(label="input new_col_name", label_visibility="hidden", key="rename_input", placeholder="new_col_name", on_change=submit_rename)
+        st.write("")
+        st.write("")    
+        new_col_name = st.text_input(label="input new_col_name", label_visibility="collapsed", key="rename_input", placeholder="new_col_name", on_change=submit_rename)
+    with col2:
+        st.write("")
+        st.write("")
+        st.button("Undo", on_click=undo_rename, disabled=not st.session_state.rename_log)
     with col3:
         st.dataframe(PREVIEW_DF[[PREVIEW_DF.columns[st.session_state.current_idx]]].head(3))
     with col4:
@@ -130,12 +130,8 @@ if st.session_state.current_idx < len(RAW_COLUMNS):
         st.write("")
         for row in st.session_state.rename_log:
             pretty_text(row, "center", "white", "400", "20px")
-
-else:            
-    st.success("YLIVERTAINEN SUCCESS")
-    
+else:
     for row in st.session_state.rename_log:
-        
         new_name = row.split(" --> ")[0]
         old_name = row.split(" --> ")[1]            
         if new_name not in COLUMN_RENAME_MAP:
@@ -144,54 +140,103 @@ else:
             COLUMN_RENAME_MAP[new_name].append(old_name)
     COLUMN_RENAME_MAP.pop("r", None)
 
-    
-    #================= Rerun from here =================
-    st.session_state["COLUMN_RENAME_MAP"] = dict(COLUMN_RENAME_MAP)    
-    project = YlivertainenDataCleaningSurg(csvs, st.session_state["COLUMN_RENAME_MAP"])
+    st.session_state["COLUMN_RENAME_MAP"] = dict(COLUMN_RENAME_MAP)
+    RENAME_FINISHED = True
 
-    #==============================
-    #  Ultimate Column Rearranger
-    #==============================
-    finished = False
-    if st.session_state.rearrange_idx < len(project.df):
-        col = project.df[[project.df.columns[st.session_state.rearrange_idx]]]
+#=====================================
+#           build a project
+#=====================================
+if RENAME_FINISHED:
+    project = YlivertainenDataCleaningSurg(csvs, st.session_state["COLUMN_RENAME_MAP"])
+#=====================================
+#          COLUMN RELOCATOR
+#=====================================
+SEQUENCING_FINISHED = False
+
+# ===== SESSION STATE INIT =====
+if "rearrange_idx" not in st.session_state:
+    st.session_state.rearrange_idx = 0
+if "rearrange_log" not in st.session_state:
+    st.session_state.rearrange_log = []
+if "rearrange_input" not in st.session_state:
+    st.session_state.rearrange_input = ""
+if "rearange_positions" not in st.session_state:
+    st.session_state.rearange_positions = [] 
+if "SEQUENCE" not in st.session_state:
+    st.session_state.SEQUENCE = []
+# ===== HELPERS =====
+def submit_rearrange():
+    raw = st.session_state.rearrange_input.strip()
+    if not raw:
+        return
+
+    loc = int(raw)
+
+    df = project.df
+    col_name = df.columns[st.session_state.rearrange_idx]
+
+    st.session_state.rearrange_log.insert(0, f"{loc} <-- {col_name}")
+    if col_name not in st.session_state.SEQUENCE:
+        st.session_state.SEQUENCE.insert(loc, col_name)
+        st.session_state.rearrange_idx += 1
+    st.session_state.rearange_positions.append(loc)
+    st.session_state.rearrange_input = ""
+
+def undo_rearrange():
+    if st.session_state.rearrange_log and st.session_state.rearrange_idx > 0:
+        pop_idx = st.session_state.rearrange_idx - 1
         
+        if 0 <= pop_idx < len(st.session_state.SEQUENCE):
+            st.session_state.SEQUENCE.pop(pop_idx)
+        
+        st.session_state.rearrange_log.pop(0)
+        st.session_state.rearrange_idx -= 1
+        st.session_state.rearrange_input = ""
+    
+    if st.session_state.rearange_positions and st.session_state.SEQUENCE:
+        prev_loc = st.session_state.rearange_positions.pop()
+        if 0 <= prev_loc < len(st.session_state.SEQUENCE):
+            st.session_state.SEQUENCE.pop(prev_loc)
+
+# ===== FUNCTION ======
+if RENAME_FINISHED:
+
+    if st.session_state.rearrange_idx < len(project.df.columns):
+
+        preview_col = project.df[[project.df.columns[st.session_state.rearrange_idx]]]
+
         with col1:
-            new_col_name = st.text_input(
+            st.write("")
+            st.write("")
+            new_col_location = st.text_input(
                 label="input the sequence number",
-                label_visibility="hidden",
+                label_visibility="collapsed",
                 key="rearrange_input",
                 placeholder="new_col_sequence",
-                on_change=submit_rearrange)
-        
+                on_change=submit_rearrange)    
+        with col2:
+            st.write("")
+            st.write("")
+            st.button("Undo", on_click=undo_rearrange, disabled=not st.session_state.rearrange_log)
         with col3:
-            st.dataframe(col.head(3))
+            st.dataframe(preview_col.head(3))
+        with col4:
+            pretty_text("🔄 AWESOME REARRANGE LOG 🔄", "center", "white", "600", "30px")
+            st.write(st.session_state.SEQUENCE)
+            st.write(project.df.columns)
+            for row in st.session_state.rearrange_log:
+                pretty_text(row, "center", "white", "400", "20px")
+
+    else:
+        col1, col2 = st.columns([10, 1])
+        col2.button("Undo", on_click=undo_rearrange, disabled=not st.session_state.rearrange_log)
+        col1.write(project)
         
-
-        st.session_state.REARRANGED_DF = pd.concat([st.session_state.REARRANGED_DF, col], axis=1)
-        st.dataframe(st.session_state.REARRANGED_DF)
-
-        
-
-    if finished:
-        project.df = st.session_state.REARRANGED_DF
-        st.write(project)
+        project.df = project.df[st.session_state.SEQUENCE]
         st.dataframe(project.df.head())
+        SEQUENCING_FINISHED = True
 
 
-    #TODO: decide how to make it very fast to arrange the columns
-        # no need for mouse (can do with just keyboard)
-        # very fast and intuitive
-        # same idea like in the UCR but!!! it shows the column (just one like in UCR) 
-        # and I input the number where to place it relatively to the other columns that I have right now in the shown df 
-            # creates the DF in real time
-            
-            # TEXT BOX   --   COLUMN NAME
-            # (below) DF.head(3) that updates with every input
-
-    
-    
-    
 
 
 
