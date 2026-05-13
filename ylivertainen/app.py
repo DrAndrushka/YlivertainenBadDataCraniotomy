@@ -124,7 +124,12 @@ if st.session_state.current_idx < len(RAW_COLUMNS):
     with col1:
         st.write("")
         st.write("")    
-        new_col_name = st.text_input(label="input new_col_name", label_visibility="collapsed", key="rename_input", placeholder="new_col_name", on_change=submit_rename)
+        new_col_name = st.text_input(
+            label="--> New Canonical Name (blank=DROP)",
+            label_visibility="collapsed",
+            key="rename_input",
+            placeholder="e.g. age or __DROP__",
+            on_change=submit_rename)
     with col2:
         st.write("")
         st.write("")
