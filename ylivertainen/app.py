@@ -3,6 +3,7 @@
 #================================================================================
 from pathlib import Path
 import sys
+
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from ylivertainen._pathing import setup_repo_path
@@ -254,10 +255,24 @@ from dataclasses import dataclass
 from typing import Literal
 import numpy as np
 
-SCHEMA_FINISHED = False
-DERIVED_FINISHED = False
-# ===== HELPERS =====
-@dataclass(frozen=True)
+
+if "preview_done" not in st.session_state:
+    st.session_state.preview_done = False
+
+if "SCHEMA" not in st.session_state:
+    st.session_state.SCHEMA = []
+if "SCHEMA_log" not in st.session_state:
+    st.session_state.SCHEMA_log = []
+if "SCHEMA_FINISHED" not in st.session_state:
+    st.session_state.SCHEMA_FINISHED = False
+
+if "DERIVED" not in st.session_state:
+    st.session_state.DERIVED = []
+if "DERIVED_FINISHED" not in st.session_state:    
+    st.session_state.DERIVED_FINISHED = False
+
+# ===== DEFINE DATACLASS FOR THE SCHEMA =====
+@dataclass(frozen=False)
 class ColSpec:
     # ===== SCHEMA =====
     name: str
@@ -290,17 +305,35 @@ class ColSpec:
         if self.ordered is not None and self.nulls is not None:
                 raise ValueError("❌ Redundant 'nulls' added. Unused values in 'ordered' are automatically filtered out")
 
+# ====== HELPERS ======
+if "ordered_categories" not in st.session_state:
+    st.session_state.ordered_categories = ""
+def submit_ordered_categories():
+    all_categories = st.session_state.ordered_categories.strip().split()
+
+    ColSpec.ordered = tuple(all_categories)
+    st.session_state.SCHEMA_log.insert(0, f"Categories (ordered): {all_categories}")
+
+    st.session_state.ordered_categories = ""
+
+if "non_ordered_categories" not in st.session_state:
+    st.session_state.non_ordered_categories = ""
+def submit_non_ordered_categories():
+    ColSpec.ordered = None
+    st.session_state.SCHEMA_log.insert(0, f"Categories (non-ordered): {list(project.df[col_name].value_counts().head())}")
+    
+    st.session_state.non_ordered_categories = ""
+
+
 # ====== SESSION STATE INIT ======
 if "schema_idx" not in st.session_state:
     st.session_state.schema_idx = 0
 if "derived_idx" not in st.session_state:
     st.session_state.derived_idx = 0
-if "preview_done" not in st.session_state:
-    st.session_state.preview_done = False
-# ===== FUNCTION =====
-SCHEMA = []
-DERIVED = []
+if "category_chosen" not in st.session_state:
+    st.session_state.category_chosen = False
 
+# ===== FUNCTION =====
 if SEQUENCING_FINISHED and not st.session_state.preview_done:
     col1, col2 = st.columns([1, 10])
 
@@ -318,44 +351,75 @@ if SEQUENCING_FINISHED and not st.session_state.preview_done:
         st.session_state.preview_done = True
         st.rerun()
 
-if st.session_state.preview_done:
+if st.session_state.preview_done and st.session_state.schema_idx < len(project.df.columns):
+    col_name = project.df.columns[st.session_state.schema_idx]
 
     col1,col2,col3,col4 = st.columns([1,0.25,1.5,0.9])
 
-    with col1:
-        if st.button("numeric", key="numeric_dtype", width="stretch"):
-            pass
+    if not st.session_state.category_chosen:
+        #kind: Literal["numeric", "timedelta", "datetime", "categorical", "text", "boolean", "match", "delta"]
+        with col1:
+            if st.button("numeric", key="numeric_dtype", width="stretch"):
+                st.session_state.category_chosen = True
+
+                st.session_state.SCHEMA.append(ColSpec(name=col_name, kind="numeric"))
+
+
+
+            if st.button("categorical", key="categorical_dtype", width="stretch"):
+                st.session_state.category_chosen = True
+                
+                if st.button("ordered", key="categorical_ordered", width="stretch"):
+                    ordered_categories = st.text_input(
+                        label="add new ordered category",
+                        label_visibility="collapsed",
+                        key="ordered_categories",
+                        placeholder="e.g. cat1 cat2 cat3...",
+                        on_change=submit_ordered_categories)
+
+                if st.button("non-ordered", key="categorical_ordered", width="stretch"):
+                    non_ordered_categories = st.text_input(
+                        label="add new ordered category",
+                        label_visibility="collapsed",
+                        key="non_ordered_categories",
+                        placeholder="e.g. cat3 cat2 cat7...",
+                        on_change=submit_non_ordered_categories)
+                    
+                    
+                    st.session_state.SCHEMA.append(ColSpec(name=col_name, kind="categorical", ordered=None))
+
+
         
-        if st.button("categorical", key="categorical_dtype", width="stretch"):
-            pass
-    
-        if st.button("datetime", key="datetime_dtype", width="stretch"):
-            pass
-        
-        if st.button("timedelta", key="timedelta_dtype", width="stretch"):
-            pass
+            if st.button("datetime", key="datetime_dtype", width="stretch"):
+                pass
+            
+            if st.button("timedelta", key="timedelta_dtype", width="stretch"):
+                pass
 
-        if st.button("boolean", key="boolean_dtype", width="stretch"):
-            pass
+            if st.button("boolean", key="boolean_dtype", width="stretch"):
+                pass
 
-        for x in range(3):
-            st.write("")
-        if st.button("Undo", key="undo_to_previous_action", width="stretch"):
-            pass
+            for x in range(3):
+                st.write("")
+            if st.button("Undo", key="undo_to_previous_action", width="stretch"):
+                pass
 
-    with col2:
-        if st.button("*match", key="derived_match", width="stretch"):
-            pass
+        with col2:
+            if st.button("*match", key="derived_match", width="stretch"):
+                pass
 
-        if st.button("delta", key="derived_delta", width="stretch"):
-            pass
-        
-        if st.button("text", key="text_dtype", width="stretch"):
-            pass
+            if st.button("delta", key="derived_delta", width="stretch"):
+                pass
+            
+            if st.button("text", key="text_dtype", width="stretch"):
+                pass
 
     with col3:
         pretty_text("🔢 Value Overview 🔢")
-
+        if st.session_state.category_chosen:
+            project.df = project.df[project.df.columns[st.session_state.schema_idx]]
+            
+            st.write(project.explore_values())
 
     with col4:
         pretty_text("🆎 ACTION LOG 🆎")
@@ -384,58 +448,9 @@ if st.session_state.preview_done:
     st.dataframe(project.df.head(2))
 
 
-
-
-#================================================
-#=============== SCHEMA & DERIVED ===============
-#================================================
-SCHEMA = [
-    ColSpec(name="nmpd_diag",
-            kind="categorical",
-            replace={1: 'G45.9', 2: 'I64', 3: 'I63.9'}),
-    ColSpec(name="izrakstisanas_diag",
-            kind="categorical"),
-    ColSpec(name="vecums",
-            kind="numeric"),
-    ColSpec(name="dzimums",
-            kind="categorical",
-            replace={1: 'sieviete', 2: 'vīrietis'}),
-    ColSpec(name="GKS",
-            kind="categorical",
-            ordered=tuple(range(3, 16, 1))),
-    ColSpec(name="FastTest",
-            kind="categorical",
-            ordered=(1, 3, 4, 2)),
-    ColSpec(name="izsaukuma_laiks",
-            kind="datetime",
-            keep=False),
-    ColSpec(name="nogadasana_PSKUS_laiks",
-            kind="datetime", 
-            keep=False),
-    ColSpec(name="patient_card_no",
-            kind="text",
-            keep=True),
-]
-
-DERIVED = [
-    ColSpec(name="lidzPSKUS_timedelta_minutes",
-            kind="timedelta",
-            timedelta_units='minutes',
-            derive_from=("izsaukuma_laiks", "nogadasana_PSKUS_laiks"),
-            keep=False),
-]
-
-
-
-
-
-
-
-
-
-
-
-
+# ====== COMPLETE OVERVIEW ======
+if st.session_state.SCHEMA_FINISHED and st.session_state.DERIVED_FINISHED:
+    st.write(project.explore_values())
 
 
 
