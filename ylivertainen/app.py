@@ -1,6 +1,6 @@
-#================================================================================
+#🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧
 #                           ⚙️ SETUP for Greatness ⚙️
-#================================================================================
+#🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧
 from pathlib import Path
 import sys
 
@@ -11,9 +11,13 @@ root = setup_repo_path()
 
 import streamlit as st
 import pandas as pd
-#================================================================================
-#                         🎨 Overall Background Design 🎨
-#================================================================================
+
+from ylivertainen.cleaning import YlivertainenDataCleaningSurg, pre_merge_check
+
+
+#🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧
+#                            🎨 Background Design 🎨
+#🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧
 st.set_page_config(layout="wide")
 st.markdown("""
     <style>
@@ -40,45 +44,46 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-
-def pretty_text(text, align="center", color="white", weight="700", size="25px") -> None:
+#🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧
+#                           html text editing function
+#🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧
+def pretty_text(text, align="center", color="white", weight=700, size=25) -> None:
     text_align = "text-align:" + align
     colorrr = "color:" + color
-    font_weight = "font-weight:" + weight
-    font_size = "font-size:" + size
+    font_weight = "font-weight:" + str(weight)
+    font_size = "font-size:" + str(size) + "px"
 
     st.markdown(
         f"<div style='{text_align}; {colorrr}; {font_weight}; {font_size};'>{text}</div>",
         unsafe_allow_html=True)
-#=============================
-# Little Text Just Because...
-#=============================
+
+#🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧
+#                           Starting intro text
+#🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧
 starting_title = "Ylivertainen Bad Data Craniotomy"
 starting_text = "This is The Module for awesome doctors such as yourself. Love the hustle, love the push towards Greatness"
+
+
+#🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧
+#                           skipping to HAPPY PATH
+#🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧
 happy_path = st.checkbox(label="⚡ YLIVERTAINEN HAPPY PATH ⚡", value=True)
-    
+
 if not happy_path:
     st.title(starting_title)
     st.write(starting_text)
 
-#================================================================================
-#                              🧹 DATA CLEANING 🧹
-#================================================================================
-from ylivertainen.cleaning import YlivertainenDataCleaningSurg, pre_merge_check
 
+#🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧
+#                              🧹 DATA CLEANING 🧹
+#🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧
 st.header("🧹 DATA CLEANING 🧹")
 
-#if not happy_path:
-#    st.write("============")
-#    col1, col2, col3, col4 = st.columns([1,1,1,4])
-#    show_dfs = col1.checkbox(label="Show DataFrames", value=False)
-#    csvs = pre_merge_check(colname_length=25,show_dfs=show_dfs)
 
 
-#=====================================
-#       Ultimate Column Renamer
-#=====================================
-RENAME_FINISHED = False
+#🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧 Ultimate Column Renamer 🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧🟧
+if "RENAME_FINISHED" not in st.session_state:
+    st.session_state.RENAME_FINISHED == False
 
 COLUMN_RENAME_MAP = {}
 
@@ -153,12 +158,12 @@ else:
     COLUMN_RENAME_MAP.pop("__DROP__", None)
 
     st.session_state["COLUMN_RENAME_MAP"] = dict(COLUMN_RENAME_MAP)
-    RENAME_FINISHED = True
+    st.session_state.RENAME_FINISHED = True
 
 #=====================================
 #           build a project
 #=====================================
-if RENAME_FINISHED:
+if st.session_state.RENAME_FINISHED:
     project = YlivertainenDataCleaningSurg(csvs, st.session_state["COLUMN_RENAME_MAP"])
 
 #=====================================
@@ -217,7 +222,7 @@ def undo_rearrange():
             st.session_state.rearrange_input = ""
 
 # ===== FUNCTION ======
-if RENAME_FINISHED:
+if st.session_state.RENAME_FINISHED:
 
     if st.session_state.rearrange_idx < len(project.df.columns):
 
@@ -258,6 +263,12 @@ import numpy as np
 
 if "preview_done" not in st.session_state:
     st.session_state.preview_done = False
+
+if "column_state" not in st.session_state:
+    st.session_state.column_state = "choose_kind"
+if "category_chosen" not in st.session_state:
+    st.session_state.category_chosen = ""
+
 
 if "SCHEMA" not in st.session_state:
     st.session_state.SCHEMA = []
@@ -305,33 +316,61 @@ class ColSpec:
         if self.ordered is not None and self.nulls is not None:
                 raise ValueError("❌ Redundant 'nulls' added. Unused values in 'ordered' are automatically filtered out")
 
+
 # ====== HELPERS ======
-if "ordered_categories" not in st.session_state:
-    st.session_state.ordered_categories = ""
+if "undo_stack" not in st.session_state:
+    st.session_state.undo_stack = []
+
+def push_undo_snapshot(col_name: str):
+    st.session_state.undo_stack.append({
+        "schema_idx": st.session_state.schema_idx,
+        "column_state": st.session_state.column_state,
+        "category_chosen": st.session_state.category_chosen,
+        "col_name": col_name,
+        "col_data": project.df[col_name].copy(deep=True),
+        "schema_len": len(st.session_state.SCHEMA),
+        "log_len": len(st.session_state.SCHEMA_log),
+    })
+
+def undo_last_action():
+    if not st.session_state.undo_stack:
+        return
+    snap = st.session_state.undo_stack.pop()
+
+    project.df[snap["col_name"]] = snap["col_data"].copy(deep=True)
+
+    st.session_state.schema_idx = snap["schema_idx"]
+    st.session_state.column_state = snap["column_state"]
+    st.session_state.category_chosen = snap["category_chosen"]
+
+    while len(st.session_state.SCHEMA) > snap["schema_len"]:
+        st.session_state.SCHEMA.pop()
+    while len(st.session_state.SCHEMA_log) > snap["log_len"]:
+        st.session_state.SCHEMA_log.pop(0)
+
 def submit_ordered_categories():
+    col_name = project.df.columns[st.session_state.schema_idx]
+    
     all_categories = st.session_state.ordered_categories.strip().split()
 
-    ColSpec.ordered = tuple(all_categories)
     st.session_state.SCHEMA_log.insert(0, f"Categories (ordered): {all_categories}")
 
+    col_after = pd.Categorical(project.df[col_name], list(all_categories), ordered=True)
+    project.df[col_name] = col_after
+
+    st.session_state.SCHEMA.append(ColSpec(
+        name=col_name,
+        kind="categorical",
+        ordered=tuple(all_categories)))
+    st.session_state.SCHEMA_log.insert(0, f"categories: {all_categories}")
+
     st.session_state.ordered_categories = ""
-
-if "non_ordered_categories" not in st.session_state:
-    st.session_state.non_ordered_categories = ""
-def submit_non_ordered_categories():
-    ColSpec.ordered = None
-    st.session_state.SCHEMA_log.insert(0, f"Categories (non-ordered): {list(project.df[col_name].value_counts().head())}")
-    
-    st.session_state.non_ordered_categories = ""
-
-
+    st.session_state.column_state = "chosen"
 # ====== SESSION STATE INIT ======
 if "schema_idx" not in st.session_state:
     st.session_state.schema_idx = 0
 if "derived_idx" not in st.session_state:
     st.session_state.derived_idx = 0
-if "category_chosen" not in st.session_state:
-    st.session_state.category_chosen = False
 
 # ===== FUNCTION =====
 if SEQUENCING_FINISHED and not st.session_state.preview_done:
@@ -356,80 +395,229 @@ if st.session_state.preview_done and st.session_state.schema_idx < len(project.d
 
     col1,col2,col3,col4 = st.columns([1,0.25,1.5,0.9])
 
-    if not st.session_state.category_chosen:
-        #kind: Literal["numeric", "timedelta", "datetime", "categorical", "text", "boolean", "match", "delta"]
-        with col1:
-            if st.button("numeric", key="numeric_dtype", width="stretch"):
-                st.session_state.category_chosen = True
-
-                st.session_state.SCHEMA.append(ColSpec(name=col_name, kind="numeric"))
-
-
-
-            if st.button("categorical", key="categorical_dtype", width="stretch"):
-                st.session_state.category_chosen = True
-                
-                if st.button("ordered", key="categorical_ordered", width="stretch"):
-                    ordered_categories = st.text_input(
-                        label="add new ordered category",
-                        label_visibility="collapsed",
-                        key="ordered_categories",
-                        placeholder="e.g. cat1 cat2 cat3...",
-                        on_change=submit_ordered_categories)
-
-                if st.button("non-ordered", key="categorical_ordered", width="stretch"):
-                    non_ordered_categories = st.text_input(
-                        label="add new ordered category",
-                        label_visibility="collapsed",
-                        key="non_ordered_categories",
-                        placeholder="e.g. cat3 cat2 cat7...",
-                        on_change=submit_non_ordered_categories)
-                    
-                    
-                    st.session_state.SCHEMA.append(ColSpec(name=col_name, kind="categorical", ordered=None))
-
-
         
-            if st.button("datetime", key="datetime_dtype", width="stretch"):
-                pass
-            
-            if st.button("timedelta", key="timedelta_dtype", width="stretch"):
-                pass
+    if st.session_state.column_state == "choose_kind":          
+        if col1.button("numeric", key="numeric_dtype", width="stretch"):
+            st.session_state.category_chosen = "numeric"
+            st.session_state.column_state = "chosen"
+            st.session_state.SCHEMA.append(ColSpec(name=col_name, kind=st.session_state.category_chosen))
+            st.session_state.SCHEMA_log.insert(0, f"{col_name} converted to 'numeric'")
 
-            if st.button("boolean", key="boolean_dtype", width="stretch"):
-                pass
+        if "ordered_categories" not in st.session_state:
+            st.session_state.ordered_categories = ""
+        if col1.button("categorical (ordered)", key="categorical_ordered", width="stretch"):
+            st.session_state.category_chosen = "categorical_ordered"
+            st.session_state.SCHEMA_log.insert(0, f"{col_name} converted to 'Categorical(ordered)'")
+            st.session_state.column_state = "await_ordered_categories"
+        
+        if col1.button("categorical (non-ordered)", key="categorical_non_ordered", width="stretch"):
+            st.session_state.category_chosen = "categorical_non_ordered"
+            st.session_state.column_state = "chosen"
+            st.session_state.SCHEMA.append(ColSpec(name=col_name, kind="categorical"))
 
-            for x in range(3):
-                st.write("")
-            if st.button("Undo", key="undo_to_previous_action", width="stretch"):
-                pass
+            project.df[col_name] = pd.Categorical(project.df[col_name], ordered=False)
+            st.session_state.SCHEMA_log.insert(0, f"{col_name} converted to 'Categorical(non-ordered)'")
 
-        with col2:
-            if st.button("*match", key="derived_match", width="stretch"):
-                pass
+        if col1.button("boolean", key="boolean_dtype", width="stretch"):
+            st.session_state.category_chosen = "boolean"
+            st.session_state.column_state = "chosen"
+            st.session_state.SCHEMA.append(ColSpec(name=col_name, kind=st.session_state.category_chosen))
+            st.session_state.SCHEMA_log.insert(0, f"{col_name} converted to 'boolean'")
 
-            if st.button("delta", key="derived_delta", width="stretch"):
-                pass
-            
-            if st.button("text", key="text_dtype", width="stretch"):
-                pass
+        if col1.button("datetime", key="datetime_dtype", width="stretch"):
+            st.session_state.category_chosen = "datetime"
+            st.session_state.column_state = "chosen"
+            st.session_state.SCHEMA.append(ColSpec(name=col_name, kind=st.session_state.category_chosen))
+            st.session_state.SCHEMA_log.insert(0, f"{col_name} converted to 'datetime'")
 
-    with col3:
-        pretty_text("🔢 Value Overview 🔢")
-        if st.session_state.category_chosen:
-            project.df = project.df[project.df.columns[st.session_state.schema_idx]]
-            
-            st.write(project.explore_values())
+        if col1.button("timedelta", key="timedelta_dtype", width="stretch"):
+            st.session_state.category_chosen = "timedelta"
+            st.session_state.column_state = "chosen"
+            st.session_state.SCHEMA.append(ColSpec(name=col_name, kind=st.session_state.category_chosen))
+            st.session_state.SCHEMA_log.insert(0, f"{col_name} converted to 'timedelta'")
+
+        if col2.button("text", key="text_dtype", width="stretch"):
+            st.session_state.category_chosen = "text"
+            st.session_state.column_state = "chosen"
+            st.session_state.SCHEMA.append(ColSpec(name=col_name, kind=st.session_state.category_chosen))
+            st.session_state.SCHEMA_log.insert(0, f"{col_name} converted to 'text'")
+    
+
+    if st.session_state.column_state == "choose_kind":
+        with col3:
+            pretty_text("🔢 Value Overview 🔢")
+        
+            dt = project.df[col_name].dtype
+            counts = project.df[col_name].count()
+            unique_count = project.df[col_name].nunique()
+            commonest = project.df[col_name].value_counts().head(5).to_dict()
+            rarest = project.df[col_name].value_counts().tail(5).to_dict()
+            nan_count = project.df[col_name].isna().sum()
+
+            for x in range(2): st.write("")
+
+            pretty_text(f"===== {col_name} =====", weight=600, size=30)
+            pretty_text(f'Dtype: {dt}', weight=600, size=20)
+            pretty_text(f'Unique count: {unique_count}', weight=600, size=20)
+            if unique_count > 5:
+                pretty_text(f'Unique first: {commonest}', weight=600, size=20)
+                pretty_text(f'Unique last: {rarest}', weight=600, size=20)
+            else:
+                pretty_text(f'Uniques: {commonest}', weight=600, size=20)
+            if nan_count > 0:
+                pretty_text(f'NaN count: {nan_count}', weight=600, size=20)
+            else:
+                pretty_text(f'NaN count: {nan_count}', weight=600, size=20)
+    
+    if st.session_state.column_state == "await_ordered_categories":
+        push_undo_snapshot(col_name)
+        ordered_categories = col1.text_input(
+            label="input order of categories",
+            label_visibility="collapsed",
+            key="ordered_categories",
+            placeholder="e.g. cat1 cat2 cat3...",
+            on_change=submit_ordered_categories)
+
+        # ColSpec added inside the function
+        # SCHEMA_log updated inside the function
+        # column_state updated inside the function
+
+    if st.session_state.column_state != "choose_kind":
+        with col3:
+            if st.session_state.category_chosen in {"numeric", "timedelta", "datetime"}:
+                dt = project.df[col_name].dtype
+                max_val = project.df[col_name].max()
+                min_val = project.df[col_name].min()
+                mean_val = round(project.df[col_name].mean(), 3)
+                std_val = round(project.df[col_name].std(), 3)
+                nan_count = project.df[col_name].isna().sum()
+
+                pretty_text("🔢 Value Overview 🔢")
+                pretty_text(f"===== {col_name} =====", weight=600, size=30)
+                pretty_text(f'Dtype: {dt}', weight=600, size=20)
+                pretty_text(f'MAX: {max_val}', weight=600, size=20)
+                pretty_text(f'MIN: {min_val}', weight=600, size=20)
+                pretty_text(f'Mean: {mean_val}', weight=600, size=20)
+                pretty_text(f'STD: {std_val}', weight=600, size=20)
+                if nan_count > 0:
+                    pretty_text(f'NaN count: {nan_count}', weight=600, size=20)
+                else:
+                    pretty_text(f'NaN count: {nan_count}', weight=600, size=20)            
+
+            if st.session_state.category_chosen in {"categorical_ordered", "categorical_non_ordered", "boolean", "text"}:
+                dt = project.df[col_name].dtype
+                counts = project.df[col_name].count()
+                unique_count = project.df[col_name].nunique()
+                commonest = project.df[col_name].value_counts().head(5).to_dict()
+                rarest = project.df[col_name].value_counts().tail(5).to_dict()
+                nan_count = project.df[col_name].isna().sum()
+
+                for x in range(2): st.write("")
+
+                pretty_text("🔢 Value Overview 🔢")
+                pretty_text(f"===== {col_name} =====", weight=600, size=30)
+                pretty_text(f'Dtype: {dt}', weight=600, size=20)
+                pretty_text(f'Unique count: {unique_count}', weight=600, size=20)
+                if unique_count > 5:
+                    pretty_text(f'Unique first: {commonest}', weight=600, size=20)
+                    pretty_text(f'Unique last: {rarest}', weight=600, size=20)
+                else:
+                    pretty_text(f'Uniques: {commonest}', weight=600, size=20)
+                if nan_count > 0:
+                    pretty_text(f'NaN count: {nan_count}', weight=600, size=20)
+                else:
+                    pretty_text(f'NaN count: {nan_count}', weight=600, size=20)
+
+
+    if "nan_values" not in st.session_state:
+        st.session_state.nan_values = ""
+    def submit_nans():
+        col_name = project.df.columns[st.session_state.schema_idx]
+        col = project.df[col_name].copy()
+        nan_input = st.session_state.nan_values.strip()
+
+        if not nan_input:
+            return
+
+        nan_before = col.isna().sum()
+        col = col.replace(to_replace=nan_input, value=pd.NA)
+        nan_after = col.isna().sum()
+
+        st.session_state.SCHEMA_log.insert(0, f"{col_name} Values became NaNs: '{nan_input}' ({nan_after - nan_before})")
+        st.session_state.nan_values = ""
+
+        project.df[col_name] = col
+    if st.session_state.column_state == "chosen":
+        push_undo_snapshot(col_name)
+        nan_values = col1.text_input(
+                label="input values to convert to NaNs",
+                label_visibility="collapsed",
+                key="nan_values",
+                placeholder="one value e.g. ten",
+                on_change=submit_nans)
+        
+        for x in range(2): col1.write("")
+        col1.button("Undo", key="undo_one_action", on_click=undo_last_action, width="stretch")
+
+        if col1.button("Finished placing NaNs", key="finish_nans", width="stretch"):
+            st.session_state.column_state = "nan_placed"     
+    
+    
+    if "value_replacement" not in st.session_state:
+        st.session_state.value_replacement = ""
+    def submit_replacement():
+        col_name = project.df.columns[st.session_state.schema_idx]
+        col = project.df[col_name].copy()
+
+        if ":" not in st.session_state.value_replacement:
+            col1.warning("Divide old_val and new_val with ':'")
+            return
+                    
+        old_val, new_val = [x.strip() for x in st.session_state.value_replacement.split(":", 1)]
+        
+        if not old_val or not new_val:
+            col1.warning("Has to be values on both sides of ':'")
+            return
+
+        col = col.replace(to_replace=old_val, value=new_val)
+        
+        st.session_state.SCHEMA_log.insert(0, f"{old_val} --> {new_val} @ {col_name}")
+        st.session_state.value_replacement = ""
+
+        project.df[col_name] = col
+    if st.session_state.column_state == "nan_placed":
+        push_undo_snapshot(col_name)
+        value_replacement = col1.text_input(
+                label="input value replacement",
+                label_visibility="collapsed",
+                key="value_replacement",
+                placeholder="one value e.g. old1:new1",
+                on_change=submit_replacement)
+        for x in range(2): col1.write("")
+        col1.button("Undo", key="undo_one_action", on_click=undo_last_action, width="stretch")
+
+        if st.button("Finished replacing values", key="finish_replacing", width="stretch"):
+            st.session_state.column_state = "values_replaced"     
+
+    if st.session_state.column_state == "values_replaced":
+        st.session_state.schema_idx += 1
+        st.session_state.column_state = "choose_kind"
+    
 
     with col4:
         pretty_text("🆎 ACTION LOG 🆎")
+        st.write("")
+        for row in st.session_state.SCHEMA_log:
+            pretty_text(row, "center", "white", "400", "20px")
         
-        st.write("A Total NaNs: 5 ✅")
-        st.write("'Geralt' --> 'awesome'")
-        st.write("'alga' --> 'zoom'")
-        st.write("Chopped to NaNs --> ['m', '1', 'gh'] (NaNs: 5)")
-        st.write("A --> numeric (NaNs: 2)")
+if st.session_state.schema_idx >= len(project.df.columns):
+    st.session_state.SCHEMA_FINISHED = True
 
+
+
+
+
+        
 #TODO:
     # choose datatype
     # chop NaNs one-by-one
@@ -442,19 +630,17 @@ if st.session_state.preview_done and st.session_state.schema_idx < len(project.d
         # (real time changing, not the damn schema build and then it all comes together at once)
     #
 
-    for x in range(2):
-        st.write("")
-    
+    for x in range(2): st.write("")
     st.dataframe(project.df.head(2))
 
 
 # ====== COMPLETE OVERVIEW ======
-if st.session_state.SCHEMA_FINISHED and st.session_state.DERIVED_FINISHED:
-    st.write(project.explore_values())
+if st.session_state.SCHEMA_FINISHED: #and st.session_state.DERIVED_FINISHED:
+    project.explore_values()
+    
+    for x in range(2): st.write("")
 
-
-
-
+    st.dataframe(project.df.head(5))
 
 #================================================================================
 #                                 🚧 COHORT 🚧
